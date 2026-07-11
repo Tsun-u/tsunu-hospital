@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="小小動物醫院">
+<title>🐾 小小動物醫院</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#73c9b2">
+<script src="strings.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden; background: #b9eadc;
+    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; touch-action: none;
+  }
+  button { font: inherit; -webkit-tap-highlight-color: transparent; }
+  #scaler {
+    position: absolute; left: 50%; top: 50%; width: 1000px; height: 700px;
+    transform-origin: center; overflow: hidden; border-radius: 22px; background: #fff9e9;
+  }
+  #hospital { position: absolute; inset: 0; overflow: hidden; }
+  #hospital::before {
+    content: ""; position: absolute; inset: 72px 0 174px;
+    background-color: #f9f3df;
+    background-image: linear-gradient(90deg, rgba(100,172,158,.07) 2px, transparent 2px), linear-gradient(rgba(100,172,158,.07) 2px, transparent 2px);
+    background-size: 28px 28px;
+  }
+  #topbar {
+    position: absolute; left: 0; top: 0; width: 100%; height: 72px; z-index: 30;
+    display: flex; align-items: center; padding: 0 24px; background: #73c9b2;
+    border-bottom: 6px solid #4fa58f;
+  }
+  #logo { font-size: 25px; font-weight: 900; color: #174e46; margin-right: auto; }
+  #logo .cross { display: inline-grid; place-items: center; width: 40px; height: 40px; margin-right: 9px; border-radius: 10px; background: #fff; color: #ef5d6c; }
+  #heartBox { min-width: 114px; height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; margin-right: 14px; background: #fff; border: 4px solid #ef9cac; border-radius: 16px; font-size: 26px; font-weight: 900; color: #b63f58; }
+  .top-btn { width: 58px; height: 48px; border: 0; border-radius: 14px; background: #fff; color: #285c55; font-size: 24px; font-weight: 900; margin-left: 8px; box-shadow: 0 4px 0 #45907e; }
+  .top-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #45907e; }
+  #langBtn { width: 88px; line-height: 1; }
+  #langBtn small { display: block; margin-top: 3px; font-size: 10px; color: #52706c; }
+  #door {
+    position: absolute; left: 18px; top: 124px; width: 112px; height: 276px; z-index: 2;
+    border: 8px solid #377c70; border-bottom: 0; border-radius: 56px 56px 0 0;
+    background: #79cbbb;
+  }
+  #door::before { content: "+"; position: absolute; left: 28px; top: 35px; color: #fff; font-size: 64px; font-weight: 900; line-height: 1; }
+  #door::after { content: ""; position: absolute; right: 13px; top: 148px; width: 11px; height: 11px; border-radius: 50%; background: #ffe080; }
+  #doorMat { position: absolute; left: 4px; top: 400px; width: 144px; height: 24px; border-radius: 50%; background: rgba(46,89,79,.18); }
+  #waitingArea { position: absolute; left: 154px; top: 100px; width: 374px; height: 336px; }
+  .area-sign {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 3;
+    min-width: 92px; padding: 5px 15px; border-radius: 12px; background: #fff;
+    color: #46645f; text-align: center; font-size: 16px; font-weight: 900;
+  }
+  .lo { display: block; font-size: .62em; font-weight: 400; line-height: 1.2; color: #77908c; }
+  #chairs { position: absolute; left: 0; top: 68px; display: flex; gap: 13px; }
+  .chair {
+    position: relative; width: 116px; height: 246px; border-radius: 22px 22px 12px 12px;
+    background: #b6dbea; border: 6px solid #79aec4; box-shadow: inset 0 -36px 0 #91bfd2;
+  }
+  .chair::before { content: ""; position: absolute; left: 10px; right: 10px; bottom: 74px; height: 7px; background: #79aec4; }
+  .chair::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -12px; height: 18px; border-left: 9px solid #5e8799; border-right: 9px solid #5e8799; }
+  #beds { position: absolute; left: 550px; top: 99px; width: 426px; height: 340px; display: flex; gap: 18px; }
+  .bed {
+    position: relative; flex: 1; height: 306px; margin-top: 33px; border-radius: 22px;
+    background: #dff3ed; border: 6px solid #79b8aa; overflow: visible;
+  }
+  .bed::before { content: ""; position: absolute; left: 17px; right: 17px; bottom: 14px; height: 134px; border-radius: 16px; background: #fff; border: 5px solid #bfded6; }
+  .bed::after { content: ""; position: absolute; left: 38px; right: 38px; bottom: -17px; height: 18px; border-left: 10px solid #65988d; border-right: 10px solid #65988d; }
+  .bed.drop-ready { animation: bedGlow .65s ease-in-out infinite alternate; }
+  @keyframes bedGlow { to { transform: scale(1.025); border-color: #ffd34e; background: #fff4bd; } }
+  .bed-icon { position: absolute; left: 50%; top: -30px; transform: translateX(-50%); font-size: 31px; }
+  #toolShelf {
+    position: absolute; left: 18px; right: 18px; bottom: 16px; height: 154px; z-index: 20;
+    padding: 16px 22px 12px; border: 6px solid #aa7348; border-radius: 20px;
+    background: #d99a64; box-shadow: inset 0 -16px 0 #c58350;
+  }
+  #toolShelf::before { content: ""; position: absolute; left: 12px; right: 12px; bottom: 22px; height: 8px; background: #8a5635; border-radius: 4px; }
+  #tools { height: 100%; display: flex; justify-content: space-around; align-items: flex-start; }
+  .tool {
+    position: relative; width: 126px; height: 108px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; border-radius: 18px; background: #fff7e9;
+    border: 5px solid #8b6348; color: #4b4b52; cursor: grab; touch-action: none;
+  }
+  .tool:active { transform: scale(.96); }
+  .tool .icon { font-size: 53px; line-height: 1; }
+  .tool .label { margin-top: 5px; font-size: 13px; font-weight: 900; line-height: 1.05; text-align: center; }
+  .patient {
+    position: absolute; left: 50%; top: 18px; width: 104px; height: 185px; z-index: 7;
+    transform: translateX(-50%); touch-action: none; cursor: grab;
+  }
+  .patient.arriving { animation: patientArrive .8s cubic-bezier(.25,.9,.35,1.15); }
+  @keyframes patientArrive { from { transform: translateX(-250px) scale(.72); opacity: .25; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+  .bed .patient { top: 65px; }
+  .animal-svg { display: block; position: absolute; left: 4px; bottom: 0; width: 96px; height: 124px; overflow: visible; shape-rendering: crispEdges; filter: none; }
+  .patient .bubble {
+    position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 68px; height: 58px;
+    display: grid; place-items: center; border: 4px solid #5b716c; border-radius: 24px; background: #fff;
+    font-size: 33px; z-index: 4;
+  }
+  .patient .bubble::after { content: ""; position: absolute; left: 23px; bottom: -11px; width: 14px; height: 14px; background: #fff; border-right: 4px solid #5b716c; border-bottom: 4px solid #5b716c; transform: rotate(45deg); }
+  .patient.crying .tear { opacity: 1; animation: tearDrop .8s linear infinite; }
+  .tear { opacity: 0; }
+  @keyframes tearDrop { from { transform: translateY(-3px); opacity: 1; } to { transform: translateY(16px); opacity: 0; } }
+  .patient.patting .animal-svg { animation: pat .45s ease-in-out 2; }
+  @keyframes pat { 50% { transform: scale(.94) rotate(-3deg); } }
+  .patient.oops .animal-svg { animation: tilt .45s ease-in-out 2; }
+  @keyframes tilt { 50% { transform: rotate(10deg); } }
+  .question { position: absolute; left: 67px; top: 72px; z-index: 10; font-size: 37px; opacity: 0; transform: scale(.3); }
+  .patient.oops .question { animation: questionPop .85s ease-out; }
+  @keyframes questionPop { 25%,70% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: scale(.6); } }
+  .patient.treating .bubble { animation: treatmentPulse .5s ease-in-out infinite alternate; border-color: #67bba7; }
+  @keyframes treatmentPulse { to { transform: translateX(-50%) scale(1.12); } }
+  .patient.treating.symptom-fever .animal-svg { animation: coolDown .55s ease-in-out infinite alternate; }
+  .patient.treating.symptom-tummy .animal-svg { animation: tummyPat .42s ease-in-out infinite alternate; }
+  .patient.treating.symptom-scrape .animal-svg { animation: bandagePress .48s ease-in-out infinite alternate; }
+  .patient.treating.symptom-cold .bubble { animation: noseBlow .42s ease-in-out infinite alternate; }
+  .patient.treating.symptom-tooth .bubble { animation: toothBrush .2s linear infinite alternate; }
+  @keyframes coolDown { to { transform: translateY(3px); opacity: .82; } }
+  @keyframes tummyPat { to { transform: scaleX(.96) scaleY(1.03); } }
+  @keyframes bandagePress { to { transform: scale(.97); } }
+  @keyframes noseBlow { to { transform: translateX(-44%) scale(.92); } }
+  @keyframes toothBrush { to { transform: translateX(-56%) rotate(-5deg); } }
+  .patient.cured .bubble { font-size: 0; border-color: #ee6d89; }
+  .patient.cured .bubble::before { content: "❤"; font-size: 38px; color: #ef5d75; }
+  .patient.cured .animal-svg { animation: happySpin .75s cubic-bezier(.25,.8,.35,1) 2; }
+  @keyframes happySpin { 0%,100% { transform: translateY(0) rotate(0); } 45% { transform: translateY(-22px) rotate(12deg); } 70% { transform: translateY(-8px) rotate(-8deg); } }
+  .patient.leaving { animation: leaveDoor 1.1s ease-in forwards; }
+  @keyframes leaveDoor { 0% { transform: translateX(-50%); opacity: 1; } 100% { transform: translateX(-720px) scale(.75); opacity: 0; } }
+  .drag-ghost { position: fixed; z-index: 200; width: 110px; height: 180px; pointer-events: none; transform: translate(-50%,-50%) scale(1.08); opacity: .94; }
+  .drag-ghost.tool-ghost { width: 104px; height: 104px; display: grid; place-items: center; border: 5px solid #8b6348; border-radius: 20px; background: #fff7e9; font-size: 58px; }
+  .drag-ghost.wrong { animation: toolBounce .42s ease-in forwards; }
+  @keyframes toolBounce { 35% { transform: translate(-50%,-50%) rotate(-13deg) scale(1.12); } 70% { transform: translate(-50%,-50%) rotate(13deg) scale(.95); } 100% { transform: translate(-50%,70px) scale(.4); opacity: 0; } }
+  .particle { position: absolute; z-index: 100; pointer-events: none; font-size: 24px; animation: particleFly .9s ease-out forwards; }
+  @keyframes particleFly { to { transform: translate(var(--dx),var(--dy)) rotate(160deg) scale(.45); opacity: 0; } }
+  #unlockVisitor {
+    position: absolute; left: 26px; top: 136px; width: 105px; height: 180px; z-index: 80;
+    display: none; animation: peek 2.5s cubic-bezier(.3,1.4,.5,1) forwards;
+  }
+  #unlockVisitor.show { display: block; }
+  @keyframes peek { 0% { transform: translateX(-120px); } 20%,75% { transform: translateX(30px); } 100% { transform: translateX(-120px); } }
+  #unlockVisitor .wave { position: absolute; right: -18px; top: 84px; font-size: 35px; animation: wave .35s ease-in-out 5 alternate; }
+  @keyframes wave { to { transform: rotate(28deg); } }
+  .sparkly .spark { display: block; }
+  .spark { display: none; position: absolute; inset: 0; pointer-events: none; }
+  .spark::before, .spark::after { content: "✨"; position: absolute; font-size: 20px; animation: sparkle 1s ease-in-out infinite alternate; }
+  .spark::before { left: -5px; top: 68px; } .spark::after { right: -5px; top: 105px; animation-delay: .4s; }
+  @keyframes sparkle { to { transform: scale(.45) rotate(30deg); opacity: .35; } }
+  .rainbow { position: absolute; left: 7px; bottom: 19px; width: 74px; height: 12px; opacity: .8; background: linear-gradient(90deg,#f66,#fc5,#6d7,#5bd,#a7e); border-radius: 8px; z-index: -1; animation: rainbowTail .6s ease-in-out infinite alternate; }
+  @keyframes rainbowTail { to { transform: translateX(-18px) scaleX(1.25); opacity: .45; } }
+  #heartsFly { position: absolute; inset: 0; z-index: 120; pointer-events: none; }
+  .flying-heart { position: absolute; color: #ef5d75; font-size: 36px; animation: heartHome .8s ease-in forwards; }
+  @keyframes heartHome { to { left: 782px; top: 20px; transform: scale(.5) rotate(25deg); opacity: .5; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
+</style>
+</head>
+<body>
+<div id="scaler">
+  <main id="hospital">
+    <header id="topbar">
+      <div id="logo"><span class="cross">+</span><span id="titleText">小小動物醫院</span></div>
+      <div id="heartBox" aria-label="愛心"><span>❤</span><span id="heartCount">0</span></div>
+      <button class="top-btn" id="langBtn" type="button" aria-label="切換語言">🌐<small>中文</small></button>
+      <button class="top-btn" id="soundBtn" type="button" aria-label="關閉音效">🔊</button>
+    </header>
+    <div id="door"></div><div id="doorMat"></div>
+    <section id="waitingArea" aria-label="候診區">
+      <div class="area-sign" id="waitingSign">候診區</div>
+      <div id="chairs"><div class="chair" data-wait="0"></div><div class="chair" data-wait="1"></div><div class="chair" data-wait="2"></div></div>
+    </section>
+    <section id="beds" aria-label="病床">
+      <div class="bed" data-bed="0"><span class="bed-icon">🛏️</span></div>
+      <div class="bed" data-bed="1"><span class="bed-icon">🛏️</span></div>
+    </section>
+    <section id="toolShelf" aria-label="治療工具"><div id="tools"></div></section>
+    <div id="unlockVisitor"><span class="wave">👋</span></div>
+    <div id="heartsFly"></div>
+  </main>
+</div>
+<script>
+/* ---------- 可調整的遊戲參數 ---------- */
+const CONFIG = {
+  BED_COUNT: 2,
+  WAITING_MAX: 3,
+  PATIENT_INTERVAL_MS: 12000,
+  PATIENT_INTERVAL_JITTER_MS: 4000,
+  CRY_AFTER_MS: 25000,
+  TREAT_MS: 2500,
+  UNLOCK_STEP: 8,
+  EASTER_EGG_CHANCE: .05,
+};
+
+const SYMPTOMS = [
+  { id: 'fever', tool: 'icepack', symptomIcon: '🌡️', toolIcon: '🧊', treatmentIcon: '❄️' },
+  { id: 'tummy', tool: 'medicine', symptomIcon: '🌀', toolIcon: '🧪', treatmentIcon: '🥄' },
+  { id: 'scrape', tool: 'bandage', symptomIcon: '🩹', toolIcon: '🩹', treatmentIcon: '⭐' },
+  { id: 'cold', tool: 'tissue', symptomIcon: '🤧', toolIcon: '🧻', treatmentIcon: '💨' },
+  { id: 'tooth', tool: 'toothbrush', symptomIcon: '🦷', toolIcon: '🪥', treatmentIcon: '✨' },
+];
+
+const ANIMALS = [
+  { id: 'dog', color: '#d99b58' }, { id: 'cat', color: '#efaa63' },
+  { id: 'rabbit', color: '#f2ddd5' }, { id: 'sheep', color: '#eee9db' },
+  { id: 'monkey', color: '#a66e43' }, { id: 'bird', color: '#68b8dc' },
+  { id: 'raccoon', color: '#85909b' }, { id: 'elephant', color: '#91a9bc' },
+  { id: 'giraffe', color: '#efbe52' }, { id: 'rhino', color: '#8da3a6' },
+  { id: 'lion', color: '#e5a43e', egg: true }, { id: 'tiger', color: '#ef963f', egg: true },
+  { id: 'dinosaur', color: '#67b56d', egg: true }, { id: 'unicorn', color: '#f2e8f4', egg: true },
+];
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const state = { hearts: 0, unlocked: 3, waiting: [], beds: Array(CONFIG.BED_COUNT).fill(null), lang: 'zh', sound: true, nextId: 1 };
+let audioCtx = null, spawnTimer = 0, activeDrag = null;
+
+function text(key, vars = {}) {
+  const s = (typeof STRINGS !== 'undefined' && STRINGS[key]) || { zh: key, tw: '', lo: '' };
+  const fill = value => (value || '').replace(/\{(\w+)\}/g, (_, k) => vars[k] === undefined ? `{${k}}` : vars[k]);
+  if (state.lang === 'zh') return fill(s.zh);
+  if (state.lang === 'lo') return fill((s.lo && s.lo.trim()) ? s.lo : ((s.tw && s.tw.trim()) ? s.tw : s.zh));
+  const main = fill((s.tw && s.tw.trim()) ? s.tw : s.zh);
+  return main + ((s.lo && s.lo.trim()) ? `<span class="lo">${fill(s.lo)}</span>` : '');
+}
+
+function loadProgress() {
+  try {
+    state.hearts = Math.max(0, Number(localStorage.getItem('hospitalHearts')) || 0);
+    const earnedUnlocks = 3 + Math.floor(state.hearts / CONFIG.UNLOCK_STEP);
+    state.unlocked = Math.max(3, Math.min(10, Math.max(Number(localStorage.getItem('hospitalUnlocked')) || 0, earnedUnlocks)));
+    state.lang = localStorage.getItem('hospitalLang') || 'zh';
+  } catch (e) {}
+}
+function saveProgress() {
+  try {
+    localStorage.setItem('hospitalHearts', state.hearts);
+    localStorage.setItem('hospitalUnlocked', state.unlocked);
+    localStorage.setItem('hospitalLang', state.lang);
+  } catch (e) {}
+}
+
+function ensureAudio() {
+  if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+function beep(freq, duration = .09, type = 'sine', volume = .09, delay = 0) {
+  if (!state.sound || !audioCtx) return;
+  const start = audioCtx.currentTime + delay, oscillator = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  oscillator.type = type; oscillator.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, start); gain.gain.exponentialRampToValueAtTime(.001, start + duration);
+  oscillator.connect(gain); gain.connect(audioCtx.destination); oscillator.start(start); oscillator.stop(start + duration + .02);
+}
+const sfx = {
+  arrival: () => { beep(440,.07,'triangle'); beep(660,.1,'triangle',.08,.07); },
+  wrong: () => beep(170,.18,'triangle',.08),
+  pop: () => beep(720,.08,'sine',.08),
+  cry: () => { beep(260,.17,'sine',.035); beep(220,.2,'sine',.03,.16); },
+  comfort: () => { beep(440,.08,'sine',.05); beep(550,.1,'sine',.05,.09); },
+  cure: () => [523,659,784,1047].forEach((f,i) => beep(f,.14,'triangle',.1,i*.09)),
+  unlock: () => [392,523,659,784,1047].forEach((f,i) => beep(f,.15,'triangle',.1,i*.08)),
+};
+
+function animalSvg(animal) {
+  const c = animal.color, dark = '#4d4745', light = '#f7dfbc';
+  const commonFace = `<circle cx="39" cy="48" r="4" fill="${dark}"/><circle cx="65" cy="48" r="4" fill="${dark}"/><rect x="48" y="57" width="9" height="7" rx="3" fill="${dark}"/><path d="M52 64v5m0 0q-8 7-14 0m14 0q8 7 14 0" fill="none" stroke="${dark}" stroke-width="3"/>`;
+  const legs = `<rect x="34" y="91" width="13" height="22" rx="5" fill="${c}"/><rect x="58" y="91" width="13" height="22" rx="5" fill="${c}"/>`;
+  let feature = '', back = '', head = `<rect x="24" y="25" width="56" height="57" rx="24" fill="${c}"/>`, body = `<rect x="29" y="76" width="47" height="29" rx="15" fill="${c}"/>${legs}`;
+  if (animal.id === 'dog') feature = `<path d="M27 34Q9 28 17 63l14-8zM76 34q18-6 10 29l-14-8z" fill="#8b5b38"/>`;
+  if (animal.id === 'cat') feature = `<path d="M27 35L24 7l24 22M76 35L81 7 58 29" fill="${c}" stroke="${dark}" stroke-width="3"/><path d="M28 59H8m20 8H6m70-8h20M76 67h20" stroke="${dark}" stroke-width="2"/>`;
+  if (animal.id === 'rabbit') back = `<rect x="29" y="0" width="17" height="43" rx="9" fill="${c}" stroke="${dark}" stroke-width="3"/><rect x="59" y="0" width="17" height="43" rx="9" fill="${c}" stroke="${dark}" stroke-width="3"/><rect x="35" y="7" width="5" height="26" rx="3" fill="#efa9af"/><rect x="65" y="7" width="5" height="26" rx="3" fill="#efa9af"/>`;
+  if (animal.id === 'sheep') { back = `<g fill="${c}" stroke="${dark}" stroke-width="2"><circle cx="30" cy="36" r="14"/><circle cx="44" cy="25" r="14"/><circle cx="60" cy="25" r="14"/><circle cx="74" cy="36" r="14"/><circle cx="79" cy="52" r="12"/><circle cx="25" cy="52" r="12"/><circle cx="32" cy="66" r="10"/><circle cx="72" cy="66" r="10"/></g>`; head = `<rect x="34" y="30" width="36" height="44" rx="18" fill="#9c795c"/>`; feature = `<g fill="${c}" stroke="${dark}" stroke-width="2"><circle cx="44" cy="29" r="7"/><circle cx="52" cy="26" r="7"/><circle cx="60" cy="30" r="6"/></g>`; body = `<rect x="29" y="76" width="47" height="29" rx="15" fill="${c}"/><rect x="34" y="91" width="13" height="22" rx="5" fill="#8a6a50"/><rect x="58" y="91" width="13" height="22" rx="5" fill="#8a6a50"/>`; }
+  if (animal.id === 'monkey') feature = `<circle cx="22" cy="48" r="15" fill="${c}" stroke="${dark}" stroke-width="3"/><circle cx="82" cy="48" r="15" fill="${c}" stroke="${dark}" stroke-width="3"/><ellipse cx="52" cy="57" rx="25" ry="22" fill="${light}"/><path d="M74 91q25 1 15 20q-7 12-17 1" fill="none" stroke="${c}" stroke-width="8"/>`;
+  if (animal.id === 'bird') { head = `<circle cx="52" cy="48" r="34" fill="${c}"/>`; feature = `<path d="M50 59l-25 9 24 9z" fill="#efb73f"/><path d="M33 82q-20 6-8 21l20-15M70 82q20 6 8 21L59 88" fill="#4b96bb"/>`; body = `<ellipse cx="52" cy="88" rx="27" ry="23" fill="${c}"/><rect x="42" y="105" width="5" height="10" fill="#a86b34"/><rect x="60" y="105" width="5" height="10" fill="#a86b34"/>`; }
+  if (animal.id === 'raccoon') feature = `<path d="M25 41q27-21 54 0l-9 24q-18-11-36 0z" fill="#3f4851"/><path d="M75 94q24 2 18 20" fill="none" stroke="${c}" stroke-width="15"/><path d="M82 96l6 4m-2 8 6 3" stroke="${dark}" stroke-width="6"/>`;
+  if (animal.id === 'elephant') { feature = `<ellipse cx="22" cy="49" rx="22" ry="28" fill="${c}" stroke="${dark}" stroke-width="3"/><ellipse cx="82" cy="49" rx="22" ry="28" fill="${c}" stroke="${dark}" stroke-width="3"/><path d="M47 62v38q0 13 13 7" fill="none" stroke="${c}" stroke-width="15" stroke-linecap="round"/><path d="M47 62v38q0 13 13 7" fill="none" stroke="${dark}" stroke-width="3" stroke-linecap="round"/>`; }
+  if (animal.id === 'giraffe') { head = `<rect x="29" y="17" width="49" height="57" rx="22" fill="${c}"/>`; body = `<rect x="40" y="61" width="28" height="46" rx="10" fill="${c}"/><rect x="28" y="91" width="48" height="18" rx="9" fill="${c}"/>${legs}`; feature = `<path d="M38 21V5m30 16V5" stroke="${dark}" stroke-width="5"/><circle cx="38" cy="4" r="5" fill="${c}"/><circle cx="68" cy="4" r="5" fill="${c}"/><g fill="#9b6b32"><rect x="33" y="29" width="10" height="9"/><rect x="62" y="43" width="11" height="10"/><rect x="44" y="78" width="9" height="11"/></g>`; }
+  if (animal.id === 'rhino') feature = `<path d="M48 26L63 1l4 31" fill="#e7e0ca" stroke="${dark}" stroke-width="3"/><path d="M27 38L9 31l13 22M77 38l18-7-13 22" fill="${c}" stroke="${dark}" stroke-width="3"/>`;
+  if (animal.id === 'lion') feature = `<circle cx="52" cy="48" r="44" fill="#a96a2d"/><circle cx="52" cy="48" r="33" fill="${c}"/>`;
+  if (animal.id === 'tiger') feature = `<path d="M27 35L22 10l24 19M77 35l5-25-24 19" fill="${c}" stroke="${dark}" stroke-width="3"/><path d="M43 27l4 14m14-14-4 14M27 50l12 5m38-5-12 5M37 86l6 12m25-12-6 12" stroke="${dark}" stroke-width="5"/>`;
+  if (animal.id === 'dinosaur') { head = `<rect x="22" y="26" width="62" height="55" rx="20" fill="${c}"/>`; feature = `<path d="M28 31L35 5l12 24L58 3l10 29L81 11l-1 34" fill="#3e8d50"/><path d="M74 91q30-1 21 17l-24-2" fill="${c}" stroke="${dark}" stroke-width="3"/>`; }
+  if (animal.id === 'unicorn') feature = `<path d="M50 28L61 0l8 34" fill="#f6d15c" stroke="${dark}" stroke-width="3"/><path d="M28 35L23 9l23 20M76 35l6-26-23 20" fill="${c}" stroke="${dark}" stroke-width="3"/><path d="M27 27q9-22 30-17" fill="none" stroke="#ef79a9" stroke-width="8"/><path d="M29 20q12-17 31-9" fill="none" stroke="#72c7dc" stroke-width="5"/>`;
+  return `<svg class="animal-svg" viewBox="0 0 104 118" aria-hidden="true"><ellipse cx="52" cy="113" rx="32" ry="5" fill="rgba(50,60,55,.16)"/>${body}${back}${head}${feature}${commonFace}<path class="tear" d="M33 54q-8 11 0 17q8-6 0-17z" fill="#56bde7"/><path class="tear" d="M72 54q-8 11 0 17q8-6 0-17z" fill="#56bde7" style="animation-delay:.35s"/></svg>`;
+}
+
+function patientHtml(patient) {
+  const eggClass = patient.animal.egg ? ' sparkly' : '';
+  const arrivalClass = patient.arriving ? ' arriving' : '';
+  const rainbow = patient.animal.id === 'unicorn' ? '<span class="rainbow"></span>' : '';
+  const bubbleIcon = patient.cured ? '' : (patient.treating ? patient.symptom.treatmentIcon : patient.symptom.symptomIcon);
+  return `<div class="patient symptom-${patient.symptom.id}${eggClass}${arrivalClass}" data-patient="${patient.id}" aria-label="${text('petPatient')}"><div class="bubble">${bubbleIcon}</div>${rainbow}${animalSvg(patient.animal)}<span class="question">❓</span><span class="spark"></span></div>`;
+}
+
+function renderPatients() {
+  document.querySelectorAll('.patient').forEach(el => el.remove());
+  state.waiting.forEach((patient, index) => {
+    const chair = document.querySelector(`[data-wait="${index}"]`);
+    chair.insertAdjacentHTML('beforeend', patientHtml(patient));
+  });
+  state.beds.forEach((patient, index) => {
+    if (!patient) return;
+    const bed = document.querySelector(`[data-bed="${index}"]`);
+    bed.insertAdjacentHTML('beforeend', patientHtml(patient));
+  });
+  bindPatientEvents();
+}
+
+function chooseAnimal() {
+  if (state.unlocked >= 10 && Math.random() < CONFIG.EASTER_EGG_CHANCE) return ANIMALS[10 + Math.floor(Math.random() * 4)];
+  return ANIMALS[Math.floor(Math.random() * state.unlocked)];
+}
+function spawnPatient() {
+  if (state.waiting.length >= CONFIG.WAITING_MAX) { scheduleSpawn(); return; }
+  const patient = { id: state.nextId++, animal: chooseAnimal(), symptom: SYMPTOMS[Math.floor(Math.random() * SYMPTOMS.length)], waitStarted: Date.now(), crying: false, treating: false, arriving: true };
+  state.waiting.push(patient); renderPatients(); ensureAudio(); sfx.arrival(); setTimeout(() => { patient.arriving = false; }, 850); scheduleSpawn();
+}
+function scheduleSpawn() {
+  clearTimeout(spawnTimer);
+  const jitter = (Math.random() * 2 - 1) * CONFIG.PATIENT_INTERVAL_JITTER_MS;
+  spawnTimer = setTimeout(spawnPatient, Math.max(2500, CONFIG.PATIENT_INTERVAL_MS + jitter));
+}
+
+function bindPatientEvents() {
+  document.querySelectorAll('.patient').forEach(el => {
+    const id = Number(el.dataset.patient), patient = findPatient(id);
+    if (patient && patient.crying) el.classList.add('crying');
+    if (patient && patient.treating) el.classList.add('treating');
+    if (patient && patient.cured) el.classList.add('cured');
+    if (patient && patient.leaving) el.classList.add('leaving');
+    el.addEventListener('pointerdown', startPatientDrag);
+  });
+}
+function findPatient(id) { return state.waiting.find(p => p.id === id) || state.beds.find(p => p && p.id === id); }
+
+function startPatientDrag(event) {
+  const patient = state.waiting.find(p => p.id === Number(event.currentTarget.dataset.patient));
+  if (!patient) return;
+  ensureAudio(); event.preventDefault();
+  const ghost = event.currentTarget.cloneNode(true); ghost.classList.add('drag-ghost'); document.body.appendChild(ghost);
+  activeDrag = { kind: 'patient', patient, ghost, startX: event.clientX, startY: event.clientY };
+  moveGhost(event.clientX, event.clientY);
+  document.querySelectorAll('.bed').forEach((bed, i) => { if (!state.beds[i]) bed.classList.add('drop-ready'); });
+  window.addEventListener('pointermove', dragMove); window.addEventListener('pointerup', endDrag, { once: true }); window.addEventListener('pointercancel', endDrag, { once: true });
+}
+function startToolDrag(event) {
+  ensureAudio(); event.preventDefault();
+  const symptom = SYMPTOMS.find(s => s.tool === event.currentTarget.dataset.tool);
+  const ghost = document.createElement('div'); ghost.className = 'drag-ghost tool-ghost'; ghost.textContent = symptom.toolIcon; document.body.appendChild(ghost);
+  activeDrag = { kind: 'tool', symptom, ghost, startX: event.clientX, startY: event.clientY };
+  moveGhost(event.clientX, event.clientY);
+  state.beds.forEach((p, i) => { if (p && !p.treating && !p.cured) document.querySelector(`[data-bed="${i}"]`).classList.add('drop-ready'); });
+  window.addEventListener('pointermove', dragMove); window.addEventListener('pointerup', endDrag, { once: true }); window.addEventListener('pointercancel', endDrag, { once: true });
+}
+function dragMove(event) { if (activeDrag) moveGhost(event.clientX, event.clientY); }
+function moveGhost(x, y) { activeDrag.ghost.style.left = x + 'px'; activeDrag.ghost.style.top = y + 'px'; activeDrag.x = x; activeDrag.y = y; }
+function bedAt(x, y) {
+  return [...document.querySelectorAll('.bed')].findIndex(bed => { const r = bed.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; });
+}
+function endDrag(event) {
+  window.removeEventListener('pointermove', dragMove);
+  document.querySelectorAll('.bed').forEach(bed => bed.classList.remove('drop-ready'));
+  if (!activeDrag) return;
+  const drag = activeDrag, x = event.clientX || drag.x, y = event.clientY || drag.y, bedIndex = bedAt(x, y);
+  activeDrag = null;
+  if (drag.kind === 'patient') {
+    const moved = Math.hypot(x - drag.startX, y - drag.startY);
+    drag.ghost.remove();
+    if (moved < 12 && drag.patient.crying) comfortPatient(drag.patient);
+    else if (bedIndex >= 0 && !state.beds[bedIndex]) assignBed(drag.patient, bedIndex);
+  } else {
+    if (bedIndex >= 0 && state.beds[bedIndex] && !state.beds[bedIndex].treating && !state.beds[bedIndex].cured) useTool(drag, state.beds[bedIndex], bedIndex);
+    else drag.ghost.remove();
+  }
+}
+
+function assignBed(patient, bedIndex) {
+  const waitingIndex = state.waiting.indexOf(patient); if (waitingIndex < 0) return;
+  state.waiting.splice(waitingIndex, 1); patient.crying = false; state.beds[bedIndex] = patient; renderPatients();
+  if (state.waiting.length < CONFIG.WAITING_MAX && !spawnTimer) scheduleSpawn();
+}
+function comfortPatient(patient) {
+  patient.crying = false; patient.waitStarted = Date.now(); sfx.comfort();
+  const el = document.querySelector(`[data-patient="${patient.id}"]`); if (!el) return;
+  el.classList.remove('crying'); el.classList.add('patting'); setTimeout(() => el.classList.remove('patting'), 950);
+}
+function useTool(drag, patient, bedIndex) {
+  if (drag.symptom.tool !== patient.symptom.tool) {
+    sfx.wrong(); drag.ghost.classList.add('wrong');
+    const el = document.querySelector(`[data-patient="${patient.id}"]`); el.classList.add('oops');
+    setTimeout(() => { drag.ghost.remove(); el.classList.remove('oops'); }, 850); return;
+  }
+  drag.ghost.remove(); treatPatient(patient, bedIndex);
+}
+async function treatPatient(patient, bedIndex) {
+  patient.treating = true; let el = document.querySelector(`[data-patient="${patient.id}"]`); el.classList.add('treating');
+  el.querySelector('.bubble').textContent = patient.symptom.treatmentIcon; sfx.pop();
+  await sleep(CONFIG.TREAT_MS);
+  patient.treating = false; patient.cured = true; el = document.querySelector(`[data-patient="${patient.id}"]`);
+  if (el) { el.classList.remove('treating'); el.classList.add('cured'); el.querySelector('.bubble').textContent = ''; sfx.cure(); burst(el); }
+  await sleep(1450); patient.leaving = true; el = document.querySelector(`[data-patient="${patient.id}"]`);
+  if (el) { el.classList.add('leaving'); flyHeart(el); }
+  await sleep(850); state.beds[bedIndex] = null; state.hearts++; $('heartCount').textContent = state.hearts; checkUnlock(); saveProgress(); renderPatients();
+}
+
+function burst(origin) {
+  const r = origin.getBoundingClientRect(), host = $('hospital').getBoundingClientRect(), scale = host.width / 1000;
+  const cx = (r.left + r.width / 2 - host.left) / scale, cy = (r.top + r.height / 2 - host.top) / scale;
+  ['⭐','✨','❤','✨','⭐','❤'].forEach((glyph, i) => {
+    const p = document.createElement('span'); p.className = 'particle'; p.textContent = glyph;
+    const angle = i * Math.PI / 3; p.style.left = cx + 'px'; p.style.top = cy + 'px';
+    p.style.setProperty('--dx', Math.cos(angle) * 92 + 'px'); p.style.setProperty('--dy', Math.sin(angle) * 82 + 'px');
+    $('hospital').appendChild(p); setTimeout(() => p.remove(), 950);
+  });
+}
+function flyHeart(origin) {
+  const el = document.createElement('span'), hospitalRect = $('hospital').getBoundingClientRect(), r = origin.getBoundingClientRect(), scale = hospitalRect.width / 1000;
+  el.className = 'flying-heart'; el.textContent = '❤'; el.style.left = ((r.left - hospitalRect.left) / scale + 42) + 'px'; el.style.top = ((r.top - hospitalRect.top) / scale + 70) + 'px';
+  $('heartsFly').appendChild(el); setTimeout(() => el.remove(), 900);
+}
+function checkUnlock() {
+  const target = Math.min(10, 3 + Math.floor(state.hearts / CONFIG.UNLOCK_STEP));
+  if (target <= state.unlocked) return;
+  state.unlocked = target; sfx.unlock(); showUnlock(ANIMALS[state.unlocked - 1]);
+}
+function showUnlock(animal) {
+  const box = $('unlockVisitor'); box.innerHTML = animalSvg(animal) + '<span class="wave">👋</span>';
+  box.classList.remove('show'); void box.offsetWidth; box.classList.add('show'); burst(box); setTimeout(() => box.classList.remove('show'), 2700);
+}
+
+function renderTools() {
+  $('tools').innerHTML = SYMPTOMS.map(s => `<div class="tool" data-tool="${s.tool}" role="button" aria-label="${text(s.tool)}"><span class="icon">${s.toolIcon}</span><span class="label">${text(s.tool)}</span></div>`).join('');
+  document.querySelectorAll('.tool').forEach(tool => tool.addEventListener('pointerdown', startToolDrag));
+}
+function buildAreas() {
+  $('chairs').innerHTML = Array.from({ length: CONFIG.WAITING_MAX }, (_, i) => `<div class="chair" data-wait="${i}"></div>`).join('');
+  $('beds').innerHTML = Array.from({ length: CONFIG.BED_COUNT }, (_, i) => `<div class="bed" data-bed="${i}"><span class="bed-icon">🛏️</span></div>`).join('');
+}
+function applyStrings() {
+  $('titleText').innerHTML = text('title'); $('waitingSign').innerHTML = text('waiting');
+  $('heartBox').setAttribute('aria-label', text('hearts')); $('soundBtn').setAttribute('aria-label', text(state.sound ? 'soundOff' : 'soundOn'));
+  $('langBtn').setAttribute('aria-label', text('language'));
+  const names = { zh: '中文', tw: '台文', lo: 'Lô-má-jī' }; $('langBtn').querySelector('small').textContent = names[state.lang];
+  renderTools(); renderPatients();
+}
+
+function fit() {
+  const scale = Math.min(window.innerWidth / 1020, window.innerHeight / 720);
+  $('scaler').style.transform = `translate(-50%,-50%) scale(${scale})`;
+}
+
+$('soundBtn').addEventListener('click', () => { state.sound = !state.sound; $('soundBtn').textContent = state.sound ? '🔊' : '🔇'; if (state.sound) ensureAudio(); applyStrings(); });
+$('langBtn').addEventListener('click', () => { state.lang = state.lang === 'zh' ? 'tw' : state.lang === 'tw' ? 'lo' : 'zh'; saveProgress(); applyStrings(); });
+window.addEventListener('resize', fit);
+setInterval(() => {
+  const now = Date.now(); state.waiting.forEach(patient => {
+    if (!patient.crying && now - patient.waitStarted >= CONFIG.CRY_AFTER_MS) { patient.crying = true; sfx.cry(); const el = document.querySelector(`[data-patient="${patient.id}"]`); if (el) el.classList.add('crying'); }
+  });
+}, 1000);
+
+loadProgress(); buildAreas(); fit(); applyStrings(); $('heartCount').textContent = state.hearts;
+spawnPatient(); setTimeout(() => { if (state.waiting.length < 2) spawnPatient(); }, 1700);
+</script>
+</body>
+</html>
