@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#73c9b2">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="strings.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -126,8 +127,7 @@
   @keyframes bandagePress { to { transform: scale(.97); } }
   @keyframes noseBlow { to { transform: translateX(-44%) scale(.92); } }
   @keyframes toothBrush { to { transform: translateX(-56%) rotate(-5deg); } }
-  .patient.cured .bubble { font-size: 0; border-color: #ee6d89; }
-  .patient.cured .bubble::before { content: "❤"; font-size: 38px; color: #ef5d75; }
+  .patient.cured .bubble { border-color: #ee6d89; }
   .patient.cured .animal-svg { animation: happySpin .75s cubic-bezier(.25,.8,.35,1) 2; }
   @keyframes happySpin { 0%,100% { transform: translateY(0) rotate(0); } 45% { transform: translateY(-22px) rotate(12deg); } 70% { transform: translateY(-8px) rotate(-8deg); } }
   .patient.leaving { animation: leaveDoor 1.1s ease-in forwards; }
@@ -145,10 +145,11 @@
   #unlockVisitor.show { display: block; }
   @keyframes peek { 0% { transform: translateX(-120px); } 20%,75% { transform: translateX(30px); } 100% { transform: translateX(-120px); } }
   #unlockVisitor .wave { position: absolute; right: -18px; top: 84px; font-size: 35px; animation: wave .35s ease-in-out 5 alternate; }
+  #unlockBurst { position: absolute; left: 78px; top: 226px; width: 256px; height: 256px; transform: translate(-50%,-50%); pointer-events: none; z-index: 70; }
   @keyframes wave { to { transform: rotate(28deg); } }
   .sparkly .spark { display: block; }
   .spark { display: none; position: absolute; inset: 0; pointer-events: none; }
-  .spark::before, .spark::after { content: "✨"; position: absolute; font-size: 20px; animation: sparkle 1s ease-in-out infinite alternate; }
+  .spark::before, .spark::after { content: ""; position: absolute; width: 20px; height: 20px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8Z" fill="%23ffd76e" stroke="%235f4d44" stroke-width="1.5" stroke-linejoin="round"/></svg>') no-repeat center / contain; animation: sparkle 1s ease-in-out infinite alternate; }
   .spark::before { left: -5px; top: 68px; } .spark::after { right: -5px; top: 105px; animation-delay: .4s; }
   @keyframes sparkle { to { transform: scale(.45) rotate(30deg); opacity: .35; } }
   .rainbow { position: absolute; left: 7px; bottom: 19px; width: 74px; height: 12px; opacity: .8; background: linear-gradient(90deg,#f66,#fc5,#6d7,#5bd,#a7e); border-radius: 8px; z-index: -1; animation: rainbowTail .6s ease-in-out infinite alternate; }
@@ -164,9 +165,9 @@
   <main id="hospital">
     <header id="topbar">
       <div id="logo"><span class="cross">+</span><span id="titleText">小小動物醫院</span></div>
-      <div id="heartBox" aria-label="愛心"><span>❤</span><span id="heartCount">0</span></div>
-      <button class="top-btn" id="langBtn" type="button" aria-label="切換語言">🌐<small>中文</small></button>
-      <button class="top-btn" id="soundBtn" type="button" aria-label="關閉音效">🔊</button>
+      <div id="heartBox" aria-label="愛心"><span id="heartIcon"></span><span id="heartCount">0</span></div>
+      <button class="top-btn" id="langBtn" type="button" aria-label="切換語言"><small>中文</small></button>
+      <button class="top-btn" id="soundBtn" type="button" aria-label="關閉音效"></button>
     </header>
     <div id="door"></div><div id="doorMat"></div>
     <section id="waitingArea" aria-label="候診區">
@@ -174,11 +175,12 @@
       <div id="chairs"><div class="chair" data-wait="0"></div><div class="chair" data-wait="1"></div><div class="chair" data-wait="2"></div></div>
     </section>
     <section id="beds" aria-label="病床">
-      <div class="bed" data-bed="0"><span class="bed-icon">🛏️</span></div>
-      <div class="bed" data-bed="1"><span class="bed-icon">🛏️</span></div>
+      <div class="bed" data-bed="0"><span class="bed-icon"></span></div>
+      <div class="bed" data-bed="1"><span class="bed-icon"></span></div>
     </section>
     <section id="toolShelf" aria-label="治療工具"><div id="tools"></div></section>
-    <div id="unlockVisitor"><span class="wave">👋</span></div>
+    <div id="unlockBurst" aria-hidden="true"></div>
+<div id="unlockVisitor"><span class="wave"></span></div>
     <div id="heartsFly"></div>
   </main>
 </div>
@@ -196,15 +198,15 @@ const CONFIG = {
 };
 
 const SYMPTOMS = [
-  { id: 'fever', tool: 'icepack', symptomIcon: '🌡️', toolIcon: '🧊', treatmentIcon: '❄️' },
-  { id: 'tummy', tool: 'medicine', symptomIcon: '🌀', toolIcon: '🧪', treatmentIcon: '🥄' },
-  { id: 'scrape', tool: 'bandage', symptomIcon: '🩹', toolIcon: '🩹', treatmentIcon: '⭐' },
-  { id: 'cold', tool: 'tissue', symptomIcon: '🤧', toolIcon: '🧻', treatmentIcon: '💨' },
-  { id: 'tooth', tool: 'toothbrush', symptomIcon: '🦷', toolIcon: '🪥', treatmentIcon: '✨' },
+  { id: 'fever', tool: 'icepack', symptomIcon: 'thermo', toolIcon: 'icepack', treatmentIcon: 'snowflake' },
+  { id: 'tummy', tool: 'medicine', symptomIcon: 'swirl', toolIcon: 'medicine', treatmentIcon: 'spoon' },
+  { id: 'scrape', tool: 'bandage', symptomIcon: 'scratch', toolIcon: 'bandage', treatmentIcon: 'star' },
+  { id: 'cold', tool: 'tissue', symptomIcon: 'snot', toolIcon: 'tissuebox', treatmentIcon: 'breeze' },
+  { id: 'tooth', tool: 'toothbrush', symptomIcon: 'tooth', toolIcon: 'toothbrush', treatmentIcon: 'sparkle' },
 ];
 
 const ANIMALS = [
-  { id: 'dog', color: '#d99b58' }, { id: 'cat', color: '#efaa63' },
+  { id: 'dog', color: '#cfae8c' }, { id: 'cat', color: '#f7f2ea' },
   { id: 'rabbit', color: '#f2ddd5' }, { id: 'sheep', color: '#eee9db' },
   { id: 'monkey', color: '#a66e43' }, { id: 'bird', color: '#68b8dc' },
   { id: 'raccoon', color: '#85909b' }, { id: 'elephant', color: '#91a9bc' },
@@ -226,6 +228,8 @@ function text(key, vars = {}) {
   const main = fill((s.tw && s.tw.trim()) ? s.tw : s.zh);
   return main + ((s.lo && s.lo.trim()) ? `<span class="lo">${fill(s.lo)}</span>` : '');
 }
+/* aria-label 等 HTML 屬性專用：拿掉台文模式夾帶的標籤，避免撐破屬性 */
+function textPlain(key, vars = {}) { return text(key, vars).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); }
 
 function loadProgress() {
   try {
@@ -264,34 +268,181 @@ const sfx = {
   unlock: () => [392,523,659,784,1047].forEach((f,i) => beep(f,.15,'triangle',.1,i*.08)),
 };
 
+/* ---------- 介面小圖示：手繪 SVG（取代 emoji，1em 隨字級縮放） ---------- */
+const ICON = (() => {
+  const o = 'stroke="#5f4d44" stroke-width="1.5" stroke-linejoin="round"';
+  const w = inner => `<svg width="1em" height="1em" viewBox="0 0 24 24" style="vertical-align:-.12em" aria-hidden="true">${inner}</svg>`;
+  return {
+    /* 症狀 */
+    thermo: w(`<rect x="10" y="3" width="4" height="12" rx="2" fill="#fff" ${o}/><rect x="11.2" y="8" width="1.6" height="7" fill="#ef5d5d"/><circle cx="12" cy="18" r="4" fill="#ef5d5d" ${o}/>`),
+    swirl: w(`<circle cx="12" cy="13" r="8.6" fill="#f6cdb4" ${o}/><circle cx="12" cy="16.2" r="1.1" fill="#c9987d"/><path d="M3.8 10.5a8.6 8.6 0 0 1 16.4 0l-2 1.3-2.4-1.2-2.4 1.2-2.4-1.2-2.4 1.2-2.4-1.2Z" fill="#9fd0a8" ${o}/><path d="M2.6 5.4 4.4 6.8M21.4 5.4 19.6 6.8" stroke="#ef8080" stroke-width="1.7" stroke-linecap="round"/><path d="M21.3 8.9c.9 1.3 1.7 2.2 1.7 3.1a1.7 1.7 0 0 1-3.4 0c0-.9.8-1.8 1.7-3.1Z" fill="#9fd6e8" ${o}/>`),
+    scratch: w(`<rect x="4" y="4" width="16" height="16" rx="8" fill="#f6cdb4" ${o}/><path d="M9 8.5 7.5 15M12.8 7.5l-1.6 9M16.5 8.5 15 15" stroke="#e26d6d" stroke-width="2" stroke-linecap="round"/>`),
+    snot: w(`<path d="M9 4.5q3-2.2 6 0l1.9 6.3q1 3.6-2.4 4.7H9.5q-3.4-1.1-2.4-4.7Z" fill="#f6cdb4" ${o}/><circle cx="10" cy="12.6" r="1" fill="#c9987d"/><circle cx="14" cy="12.6" r="1" fill="#c9987d"/><path d="M10 15.5c-1.1 2.1-1.9 3.3-1.9 4.4a1.95 1.95 0 0 0 3.9 0c0-1.1-.9-2.3-2-4.4Z" fill="#9fd6e8" ${o}/>`),
+    tooth: w(`<path d="M7 4c2-1.6 3.4-1 5-1s3-.6 5 1c2.4 2 2 5.5.6 8-.9 1.7-1 4-1.4 6-.3 1.6-2 1.7-2.4.1-.3-1.3-.4-3.1-1.8-3.1s-1.5 1.8-1.8 3.1c-.4 1.6-2.1 1.5-2.4-.1-.4-2-.5-4.3-1.4-6C5 9.5 4.6 6 7 4Z" fill="#fff" ${o}/><circle cx="14.5" cy="8.5" r="1.7" fill="#5f4d44"/>`),
+    /* 工具 */
+    icepack: w(`<rect x="3" y="7" width="18" height="11" rx="5.5" fill="#bfe4f2" ${o}/><path d="M12 9.5v5M9.8 11l4.4 2M14.2 11l-4.4 2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`),
+    medicine: w(`<rect x="10" y="2.5" width="4" height="3.5" rx="1" fill="#c9a887" ${o}/><path d="M10 6.5h4v2.6c2 .8 3.4 2.7 3.4 5a5.4 5.4 0 1 1-10.8 0c0-2.3 1.4-4.2 3.4-5Z" fill="#fff" ${o}/><path d="M7.7 14.1a4.3 4.3 0 0 0 8.6 0c0-1.4-.7-2.6-1.8-3.4H9.5c-1.1.8-1.8 2-1.8 3.4Z" fill="#f2a0b8"/>`),
+    bandage: w(`<g transform="rotate(-35 12 12)"><rect x="3" y="8.5" width="18" height="7" rx="3.5" fill="#e8c9a0" ${o}/><rect x="9" y="8.5" width="6" height="7" fill="#f6e6cc"/><circle cx="6" cy="12" r=".8" fill="#bfa079"/><circle cx="18" cy="12" r=".8" fill="#bfa079"/></g>`),
+    tissuebox: w(`<path d="M10 8.8 12.3 3.9q1.5-.6 1.8 1L14.7 8.8Z" fill="#fff" ${o}/><rect x="5.5" y="8.5" width="13" height="11" rx="2" fill="#8fd0b8" ${o}/><rect x="8.6" y="7.8" width="6.8" height="1.7" rx=".85" fill="#4f8f78"/>`),
+    toothbrush: w(`<g transform="rotate(-38 12 12)"><rect x="3" y="10.6" width="13" height="3" rx="1.5" fill="#f27ca0" ${o}/><rect x="15.5" y="10" width="5.5" height="4.2" rx="1.2" fill="#f27ca0" ${o}/><rect x="15.8" y="6.8" width="4.9" height="3.4" rx="1" fill="#fff" ${o}/></g>`),
+    /* 治療演出 */
+    snowflake: w(`<path d="M12 4v16M5.5 8l13 8M18.5 8l-13 8" stroke="#8fd0e0" stroke-width="1.9" stroke-linecap="round"/>`),
+    spoon: w(`<ellipse cx="8.5" cy="8" rx="4" ry="5.2" fill="#cdd6de" ${o} transform="rotate(-40 8.5 8)"/><path d="M11.5 11.5 18.5 19" stroke="#5f4d44" stroke-width="3.8" stroke-linecap="round"/><path d="M11.5 11.5 18.5 19" stroke="#cdd6de" stroke-width="2" stroke-linecap="round"/>`),
+    breeze: w(`<path d="M4 8h9a2.5 2.5 0 1 0-2.5-3M4 13h13a2.5 2.5 0 1 1-2.5 3M4 18h7" stroke="#9ec9d8" stroke-width="2" fill="none" stroke-linecap="round"/>`),
+    sparkle: w(`<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8Z" fill="#ffd76e" ${o}/>`),
+    star: w(`<path d="M12 3l2.5 5.4 5.9.6-4.4 4 1.2 5.8L12 15.9 6.8 18.8 8 13 3.6 9l5.9-.6Z" fill="#f7c948" ${o}/>`),
+    /* 介面 */
+    heart: w(`<path d="M12 20.5C5.2 15 2.8 10.4 5.6 7.4 7.8 5 10.8 6 12 8.6 13.2 6 16.2 5 18.4 7.4c2.8 3 .4 7.6-6.4 13.1Z" fill="#ef5d75" ${o}/>`),
+    bed: w(`<rect x="3" y="6" width="3.4" height="12" rx="1.4" fill="#8b6348" ${o}/><rect x="5" y="11" width="16" height="5" rx="2" fill="#9fc0e8" ${o}/><rect x="6.4" y="9.4" width="5.4" height="3.2" rx="1.5" fill="#fff" ${o}/><path d="M5.5 16v2.4M20.5 16v2.4" stroke="#5f4d44" stroke-width="1.8" stroke-linecap="round"/>`),
+    globe: w(`<circle cx="12" cy="12" r="8.5" fill="#9fd6e8" ${o}/><ellipse cx="12" cy="12" rx="3.8" ry="8.5" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M3.5 12h17" stroke="#fff" stroke-width="1.5"/>`),
+    sound: w(`<path d="M4.5 9.5v5h3.4l4.6 3.8V5.7L7.9 9.5Z" fill="#5f4d44"/><path d="M15.5 9a4.5 4.5 0 0 1 0 6M18 6.8a8 8 0 0 1 0 10.4" stroke="#5f4d44" stroke-width="1.8" fill="none" stroke-linecap="round"/>`),
+    mute: w(`<path d="M4.5 9.5v5h3.4l4.6 3.8V5.7L7.9 9.5Z" fill="#5f4d44"/><path d="M16 9.5l5 5M21 9.5l-5 5" stroke="#ef5d5d" stroke-width="2" stroke-linecap="round"/>`),
+    paw: w(`<circle cx="12" cy="15" r="5.2" fill="#e8b98a" ${o}/><circle cx="5.3" cy="10.5" r="2.5" fill="#e8b98a" ${o}/><circle cx="9.6" cy="6.8" r="2.5" fill="#e8b98a" ${o}/><circle cx="14.4" cy="6.8" r="2.5" fill="#e8b98a" ${o}/><circle cx="18.7" cy="10.5" r="2.5" fill="#e8b98a" ${o}/>`),
+  };
+})();
+
+/* ---------- 動物繪製：圓潤軟萌風（大眼高光＋腮紅，風格基準 shared_assets/svg_animals） ---------- */
 function animalSvg(animal) {
-  const c = animal.color, dark = '#4d4745', light = '#f7dfbc';
-  const commonFace = `<circle cx="39" cy="48" r="4" fill="${dark}"/><circle cx="65" cy="48" r="4" fill="${dark}"/><rect x="48" y="57" width="9" height="7" rx="3" fill="${dark}"/><path d="M52 64v5m0 0q-8 7-14 0m14 0q8 7 14 0" fill="none" stroke="${dark}" stroke-width="3"/>`;
-  const legs = `<rect x="34" y="91" width="13" height="22" rx="5" fill="${c}"/><rect x="58" y="91" width="13" height="22" rx="5" fill="${c}"/>`;
-  let feature = '', back = '', head = `<rect x="24" y="25" width="56" height="57" rx="24" fill="${c}"/>`, body = `<rect x="29" y="76" width="47" height="29" rx="15" fill="${c}"/>${legs}`;
-  if (animal.id === 'dog') feature = `<path d="M27 34Q9 28 17 63l14-8zM76 34q18-6 10 29l-14-8z" fill="#8b5b38"/>`;
-  if (animal.id === 'cat') feature = `<path d="M27 35L24 7l24 22M76 35L81 7 58 29" fill="${c}" stroke="${dark}" stroke-width="3"/><path d="M28 59H8m20 8H6m70-8h20M76 67h20" stroke="${dark}" stroke-width="2"/>`;
-  if (animal.id === 'rabbit') back = `<rect x="29" y="0" width="17" height="43" rx="9" fill="${c}" stroke="${dark}" stroke-width="3"/><rect x="59" y="0" width="17" height="43" rx="9" fill="${c}" stroke="${dark}" stroke-width="3"/><rect x="35" y="7" width="5" height="26" rx="3" fill="#efa9af"/><rect x="65" y="7" width="5" height="26" rx="3" fill="#efa9af"/>`;
-  if (animal.id === 'sheep') { back = `<g fill="${c}" stroke="${dark}" stroke-width="2"><circle cx="30" cy="36" r="14"/><circle cx="44" cy="25" r="14"/><circle cx="60" cy="25" r="14"/><circle cx="74" cy="36" r="14"/><circle cx="79" cy="52" r="12"/><circle cx="25" cy="52" r="12"/><circle cx="32" cy="66" r="10"/><circle cx="72" cy="66" r="10"/></g>`; head = `<rect x="34" y="30" width="36" height="44" rx="18" fill="#9c795c"/>`; feature = `<g fill="${c}" stroke="${dark}" stroke-width="2"><circle cx="44" cy="29" r="7"/><circle cx="52" cy="26" r="7"/><circle cx="60" cy="30" r="6"/></g>`; body = `<rect x="29" y="76" width="47" height="29" rx="15" fill="${c}"/><rect x="34" y="91" width="13" height="22" rx="5" fill="#8a6a50"/><rect x="58" y="91" width="13" height="22" rx="5" fill="#8a6a50"/>`; }
-  if (animal.id === 'monkey') feature = `<circle cx="22" cy="48" r="15" fill="${c}" stroke="${dark}" stroke-width="3"/><circle cx="82" cy="48" r="15" fill="${c}" stroke="${dark}" stroke-width="3"/><ellipse cx="52" cy="57" rx="25" ry="22" fill="${light}"/><path d="M74 91q25 1 15 20q-7 12-17 1" fill="none" stroke="${c}" stroke-width="8"/>`;
-  if (animal.id === 'bird') { head = `<circle cx="52" cy="48" r="34" fill="${c}"/>`; feature = `<path d="M50 59l-25 9 24 9z" fill="#efb73f"/><path d="M33 82q-20 6-8 21l20-15M70 82q20 6 8 21L59 88" fill="#4b96bb"/>`; body = `<ellipse cx="52" cy="88" rx="27" ry="23" fill="${c}"/><rect x="42" y="105" width="5" height="10" fill="#a86b34"/><rect x="60" y="105" width="5" height="10" fill="#a86b34"/>`; }
-  if (animal.id === 'raccoon') feature = `<path d="M25 41q27-21 54 0l-9 24q-18-11-36 0z" fill="#3f4851"/><path d="M75 94q24 2 18 20" fill="none" stroke="${c}" stroke-width="15"/><path d="M82 96l6 4m-2 8 6 3" stroke="${dark}" stroke-width="6"/>`;
-  if (animal.id === 'elephant') { feature = `<ellipse cx="22" cy="49" rx="22" ry="28" fill="${c}" stroke="${dark}" stroke-width="3"/><ellipse cx="82" cy="49" rx="22" ry="28" fill="${c}" stroke="${dark}" stroke-width="3"/><path d="M47 62v38q0 13 13 7" fill="none" stroke="${c}" stroke-width="15" stroke-linecap="round"/><path d="M47 62v38q0 13 13 7" fill="none" stroke="${dark}" stroke-width="3" stroke-linecap="round"/>`; }
-  if (animal.id === 'giraffe') { head = `<rect x="29" y="17" width="49" height="57" rx="22" fill="${c}"/>`; body = `<rect x="40" y="61" width="28" height="46" rx="10" fill="${c}"/><rect x="28" y="91" width="48" height="18" rx="9" fill="${c}"/>${legs}`; feature = `<path d="M38 21V5m30 16V5" stroke="${dark}" stroke-width="5"/><circle cx="38" cy="4" r="5" fill="${c}"/><circle cx="68" cy="4" r="5" fill="${c}"/><g fill="#9b6b32"><rect x="33" y="29" width="10" height="9"/><rect x="62" y="43" width="11" height="10"/><rect x="44" y="78" width="9" height="11"/></g>`; }
-  if (animal.id === 'rhino') feature = `<path d="M48 26L63 1l4 31" fill="#e7e0ca" stroke="${dark}" stroke-width="3"/><path d="M27 38L9 31l13 22M77 38l18-7-13 22" fill="${c}" stroke="${dark}" stroke-width="3"/>`;
-  if (animal.id === 'lion') feature = `<circle cx="52" cy="48" r="44" fill="#a96a2d"/><circle cx="52" cy="48" r="33" fill="${c}"/>`;
-  if (animal.id === 'tiger') feature = `<path d="M27 35L22 10l24 19M77 35l5-25-24 19" fill="${c}" stroke="${dark}" stroke-width="3"/><path d="M43 27l4 14m14-14-4 14M27 50l12 5m38-5-12 5M37 86l6 12m25-12-6 12" stroke="${dark}" stroke-width="5"/>`;
-  if (animal.id === 'dinosaur') { head = `<rect x="22" y="26" width="62" height="55" rx="20" fill="${c}"/>`; feature = `<path d="M28 31L35 5l12 24L58 3l10 29L81 11l-1 34" fill="#3e8d50"/><path d="M74 91q30-1 21 17l-24-2" fill="${c}" stroke="${dark}" stroke-width="3"/>`; }
-  if (animal.id === 'unicorn') feature = `<path d="M50 28L61 0l8 34" fill="#f6d15c" stroke="${dark}" stroke-width="3"/><path d="M28 35L23 9l23 20M76 35l6-26-23 20" fill="${c}" stroke="${dark}" stroke-width="3"/><path d="M27 27q9-22 30-17" fill="none" stroke="#ef79a9" stroke-width="8"/><path d="M29 20q12-17 31-9" fill="none" stroke="#72c7dc" stroke-width="5"/>`;
-  return `<svg class="animal-svg" viewBox="0 0 104 118" aria-hidden="true"><ellipse cx="52" cy="113" rx="32" ry="5" fill="rgba(50,60,55,.16)"/>${body}${back}${head}${feature}${commonFace}<path class="tear" d="M33 54q-8 11 0 17q8-6 0-17z" fill="#56bde7"/><path class="tear" d="M72 54q-8 11 0 17q8-6 0-17z" fill="#56bde7" style="animation-delay:.35s"/></svg>`;
+  const c = animal.color, ink = '#3b3230', cream = '#fbf3e6';
+  const eye = (x, y) => `<circle cx="${x}" cy="${y}" r="6" fill="${ink}"/><circle cx="${x + 2.4}" cy="${y - 2.4}" r="2.2" fill="#fff"/>`;
+  const eyes = (y = 40) => eye(40, y) + eye(64, y);
+  const blush = (y = 52, col = '#f2aeb4') => `<ellipse cx="30" cy="${y}" rx="7" ry="4.5" fill="${col}" opacity=".8"/><ellipse cx="74" cy="${y}" rx="7" ry="4.5" fill="${col}" opacity=".8"/>`;
+  const noseTri = (y = 47.5, col = '#e88a99') => `<path d="M48.5 ${y}h7L52 ${y + 4.5}Z" fill="${col}"/>`;
+  const mouthW = (y = 51) => `<path d="M52 ${y}q0 7-6.5 8M52 ${y}q0 7 6.5 8" stroke="${ink}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+  const smile = (y = 56) => `<path d="M45 ${y}q7 5.5 14 0" stroke="${ink}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+  const O = `stroke="#5f4d44" stroke-width="2.2" stroke-linejoin="round"`;
+  const bodyStd = `<ellipse cx="52" cy="87" rx="27" ry="21" fill="${c}" ${O}/>`;
+  const headStd = `<circle cx="52" cy="42" r="30" fill="${c}" ${O}/>`;
+  const feet = (col = c) => `<ellipse cx="37" cy="105" rx="9" ry="6.5" fill="${col}" ${O}/><ellipse cx="67" cy="105" rx="9" ry="6.5" fill="${col}" ${O}/>`;
+  let art = '';
+  switch (animal.id) {
+    case 'dog':
+      art = `<path d="M29 23L35 -3l11 21Z" fill="${c}" ${O}/><path d="M32.5 18l3.2-13 5.3 11Z" fill="#e8cba8"/><path d="M75 23L69 -3 58 18Z" fill="${c}" ${O}/><path d="M71.5 18l-3.2-13-5.3 11Z" fill="#e8cba8"/>`
+        + `<path d="M77 94q15-5 10-20" stroke="#5f4d44" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M77 94q15-5 10-20" stroke="${c}" stroke-width="5.5" fill="none" stroke-linecap="round"/>`
+        + bodyStd + `<ellipse cx="52" cy="94" rx="14" ry="11" fill="${cream}"/>` + feet(cream) + headStd
+        + `<ellipse cx="52" cy="53" rx="15" ry="11" fill="${cream}"/>`
+        + eyes(40) + blush() + `<ellipse cx="52" cy="49.5" rx="4.5" ry="3.5" fill="${ink}"/>` + mouthW(52.5)
+        + `<path d="M47 60.5q5 7 10 0Z" fill="#f08080"/>`;
+      break;
+    case 'cat':
+      art = `<path d="M26 26L31 4l15 16Z" fill="#ef9a4f" ${O}/><path d="M30 22l3-11 8 8Z" fill="#f6c390"/><path d="M63 20L73 4l5 22Z" fill="#4a4440" ${O}/><path d="M66 19l8-8 3 11Z" fill="#6e6660"/>`
+        + `<path d="M77 96q14-2 12-15" stroke="#5f4d44" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M77 96q14-2 12-15" stroke="#4a4440" stroke-width="7" fill="none" stroke-linecap="round"/>`
+        + bodyStd + feet() + headStd
+        + `<circle cx="34" cy="27" r="8" fill="#ef9a4f"/><circle cx="69" cy="25" r="6" fill="#4a4440"/><ellipse cx="70" cy="88" rx="8" ry="6" fill="#ef9a4f"/>`
+        + `<path d="M13 45l11 2M13 52h11M91 45l-11 2M91 52H80" stroke="#b9a08e" stroke-width="1.8" stroke-linecap="round"/>`
+        + eyes(40) + blush() + noseTri() + mouthW(52.5);
+      break;
+    case 'rabbit':
+      art = `<g transform="rotate(-8 38 12)"><ellipse cx="38" cy="12" rx="8" ry="29" fill="${c}" ${O}/><ellipse cx="38" cy="15" rx="4" ry="21" fill="#f6b8c0"/></g>`
+        + `<g transform="rotate(8 66 12)"><ellipse cx="66" cy="12" rx="8" ry="29" fill="${c}" ${O}/><ellipse cx="66" cy="15" rx="4" ry="21" fill="#f6b8c0"/></g>`
+        + `<circle cx="81" cy="92" r="8" fill="#fff" ${O}/>` + bodyStd + feet() + headStd
+        + eyes(40) + blush() + noseTri() + mouthW(52);
+      break;
+    case 'sheep': {
+      const woolHead = `<circle cx="32" cy="26" r="11"/><circle cx="46" cy="20" r="12"/><circle cx="60" cy="20" r="12"/><circle cx="73" cy="26" r="10.5"/><circle cx="79" cy="40" r="9.5"/><circle cx="25" cy="40" r="9.5"/><circle cx="52" cy="34" r="18"/>`;
+      const woolBody = `<circle cx="29" cy="62" r="13"/><circle cx="75" cy="62" r="13"/><circle cx="34" cy="80" r="14"/><circle cx="70" cy="80" r="14"/><circle cx="40" cy="95" r="13"/><circle cx="64" cy="95" r="13"/><circle cx="52" cy="70" r="16"/><circle cx="52" cy="92" r="15"/>`;
+      art = `<path d="M40 104v8M64 104v8" stroke="#4a3f3a" stroke-width="6" stroke-linecap="round"/>`
+        + `<g fill="#fbf8f2" ${O}>${woolBody}</g><g fill="#fbf8f2">${woolBody}</g>`
+        + `<g fill="#fbf8f2" ${O}>${woolHead}</g><g fill="#fbf8f2">${woolHead}</g>`
+        + `<ellipse cx="24" cy="46" rx="10" ry="5.5" fill="#4a3f3a" transform="rotate(-24 24 46)"/><ellipse cx="80" cy="46" rx="10" ry="5.5" fill="#4a3f3a" transform="rotate(24 80 46)"/>`
+        + `<ellipse cx="52" cy="48" rx="20" ry="22" fill="#5b4d46"/>`
+        + `<g fill="#fbf8f2"><circle cx="44" cy="27.5" r="6.5"/><circle cx="52" cy="25" r="7"/><circle cx="60" cy="27.5" r="6"/></g>`
+        + `<circle cx="44" cy="46" r="5" fill="#2a2220"/><circle cx="45.8" cy="44.2" r="1.8" fill="#fff"/><circle cx="60" cy="46" r="5" fill="#2a2220"/><circle cx="61.8" cy="44.2" r="1.8" fill="#fff"/>`
+        + `<ellipse cx="37" cy="56" rx="5.5" ry="3.5" fill="#e8a0a8" opacity=".75"/><ellipse cx="67" cy="56" rx="5.5" ry="3.5" fill="#e8a0a8" opacity=".75"/>`
+        + `<path d="M49 56q3 3 6 0M52 59v4m0 0q-4 5-8 4m8-4q4 5 8 4" stroke="#2a2220" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+      break;
+    }
+    case 'monkey':
+      art = `<circle cx="20" cy="42" r="9.5" fill="${c}" ${O}/><circle cx="20" cy="42" r="5" fill="#f3dcbe"/><circle cx="84" cy="42" r="9.5" fill="${c}" ${O}/><circle cx="84" cy="42" r="5" fill="#f3dcbe"/>`
+        + `<path d="M78 94q14-1 12-13q-1.5-8-9-6" stroke="#5f4d44" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M78 94q14-1 12-13q-1.5-8-9-6" stroke="${c}" stroke-width="5.5" fill="none" stroke-linecap="round"/>`
+        + bodyStd + feet() + headStd
+        + `<path d="M48 12q4-7 9 0" stroke="#5f4d44" stroke-width="4" fill="none" stroke-linecap="round"/>`
+        + `<ellipse cx="52" cy="46" rx="20" ry="17" fill="#f3dcbe"/>`
+        + eyes(43) + blush(55) + `<circle cx="49" cy="50" r="1.7" fill="${ink}"/><circle cx="55" cy="50" r="1.7" fill="${ink}"/>` + smile(54);
+      break;
+    case 'bird':
+      art = `<circle cx="46" cy="10" r="4" fill="#4b96bb"/><circle cx="52" cy="7" r="4.5" fill="#4b96bb"/><circle cx="58" cy="10" r="4" fill="#4b96bb"/>`
+        + bodyStd + `<ellipse cx="52" cy="92" rx="18" ry="13" fill="${cream}"/>`
+        + `<ellipse cx="24" cy="84" rx="8" ry="14" fill="#4b96bb" ${O} transform="rotate(14 24 84)"/><ellipse cx="80" cy="84" rx="8" ry="14" fill="#4b96bb" ${O} transform="rotate(-14 80 84)"/>`
+        + `<path d="M42 105v8m-4-3 4 3 4-3M62 105v8m-4-3 4 3 4-3" stroke="#f2a13d" stroke-width="3" fill="none" stroke-linecap="round"/>`
+        + headStd + eyes(40) + blush(50) + `<path d="M43 46h18L52 57Z" fill="#f2a13d" ${O}/>`;
+      break;
+    case 'raccoon':
+      art = `<path d="M27 23L34 5l12 14Z" fill="#3f4851" ${O}/><path d="M77 23L70 5 58 19Z" fill="#3f4851" ${O}/>`
+        + `<circle cx="81" cy="96" r="6" fill="#3f4851" ${O}/><circle cx="85" cy="87" r="5.6" fill="${c}" ${O}/><circle cx="88" cy="78" r="5.2" fill="#3f4851" ${O}/>`
+        + bodyStd + feet() + headStd
+        + `<rect x="24" y="32" width="56" height="17" rx="8.5" fill="#3f4851"/>`
+        + `<circle cx="40" cy="40" r="6" fill="#fff"/><circle cx="40" cy="40" r="3" fill="${ink}"/><circle cx="64" cy="40" r="6" fill="#fff"/><circle cx="64" cy="40" r="3" fill="${ink}"/>`
+        + `<ellipse cx="52" cy="55" rx="13" ry="9.5" fill="${cream}"/><ellipse cx="52" cy="51.5" rx="4" ry="3" fill="${ink}"/>` + mouthW(54) + blush(56);
+      break;
+    case 'elephant':
+      art = `<ellipse cx="17" cy="44" rx="15" ry="19" fill="${c}" ${O}/><ellipse cx="18" cy="44" rx="9" ry="13" fill="#d8a8b8"/><ellipse cx="87" cy="44" rx="15" ry="19" fill="${c}" ${O}/><ellipse cx="86" cy="44" rx="9" ry="13" fill="#d8a8b8"/>`
+        + bodyStd + feet() + headStd + eyes(38) + blush(50)
+        + `<path d="M52 46q-4 16-1 26 2 9 11 9" stroke="#5f4d44" stroke-width="14" fill="none" stroke-linecap="round"/>`
+        + `<path d="M52 46q-4 16-1 26 2 9 11 9" stroke="${c}" stroke-width="9.5" fill="none" stroke-linecap="round"/>`;
+      break;
+    case 'giraffe':
+      art = `<path d="M44 10V4M60 10V4" stroke="#9b6b32" stroke-width="3.5" stroke-linecap="round"/><circle cx="44" cy="3.5" r="3.2" fill="#9b6b32"/><circle cx="60" cy="3.5" r="3.2" fill="#9b6b32"/>`
+        + `<ellipse cx="28" cy="18" rx="7" ry="4.5" fill="${c}" ${O} transform="rotate(-20 28 18)"/><ellipse cx="76" cy="18" rx="7" ry="4.5" fill="${c}" ${O} transform="rotate(20 76 18)"/>`
+        + `<rect x="44" y="42" width="16" height="40" rx="7" fill="${c}" ${O}/>`
+        + `<g fill="#cf9d4f"><circle cx="49" cy="53" r="3.8"/><circle cx="55" cy="64" r="3.5"/><circle cx="49" cy="74" r="3.2"/></g>`
+        + `<ellipse cx="52" cy="93" rx="24" ry="17" fill="${c}" ${O}/>`
+        + `<g fill="#cf9d4f"><circle cx="37" cy="90" r="4.5"/><circle cx="65" cy="97" r="4"/></g>`
+        + `<ellipse cx="39" cy="106" rx="8" ry="6" fill="${c}" ${O}/><ellipse cx="65" cy="106" rx="8" ry="6" fill="${c}" ${O}/>`
+        + `<circle cx="52" cy="26" r="21" fill="${c}" ${O}/>`
+        + `<g fill="#cf9d4f"><circle cx="36" cy="13" r="4"/><circle cx="69" cy="16" r="3.5"/></g>`
+        + `<ellipse cx="52" cy="36" rx="13" ry="9" fill="#f7e3c0"/>`
+        + eye(41, 24) + eye(63, 24)
+        + `<ellipse cx="34" cy="32" rx="5.5" ry="3.5" fill="#f2aeb4" opacity=".8"/><ellipse cx="70" cy="32" rx="5.5" ry="3.5" fill="#f2aeb4" opacity=".8"/>`
+        + `<circle cx="48" cy="35" r="1.6" fill="${ink}"/><circle cx="56" cy="35" r="1.6" fill="${ink}"/><path d="M46.5 40q5.5 4.5 11 0" stroke="${ink}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+      break;
+    case 'rhino':
+      art = `<circle cx="28" cy="17" r="5.5" fill="${c}" ${O}/><circle cx="76" cy="17" r="5.5" fill="${c}" ${O}/>`
+        + bodyStd + feet() + headStd
+        + `<ellipse cx="52" cy="53" rx="16" ry="11" fill="#d7dde6"/><path d="M48 45l4-16 4 16Z" fill="#efe8d8" ${O}/>`
+        + eyes(38) + blush(50) + `<circle cx="46.5" cy="53.5" r="1.7" fill="${ink}"/><circle cx="57.5" cy="53.5" r="1.7" fill="${ink}"/>` + smile(58);
+      break;
+    case 'lion': {
+      const mane = `<circle cx="52" cy="14" r="11"/><circle cx="34" cy="18" r="10"/><circle cx="70" cy="18" r="10"/><circle cx="24" cy="32" r="10"/><circle cx="80" cy="32" r="10"/><circle cx="22" cy="48" r="9.5"/><circle cx="82" cy="48" r="9.5"/><circle cx="30" cy="61" r="9"/><circle cx="74" cy="61" r="9"/>`;
+      art = `<g fill="#c98243" ${O}>${mane}</g><g fill="#c98243">${mane}</g>`
+        + bodyStd + `<path d="M80 96q12-4 10-16" stroke="#5f4d44" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M80 96q12-4 10-16" stroke="${c}" stroke-width="5.5" fill="none" stroke-linecap="round"/><circle cx="90" cy="78" r="4.5" fill="#c98243" ${O}/>` + feet()
+        + `<circle cx="52" cy="42" r="28" fill="${c}" ${O}/>`
+        + eyes(40) + blush() + `<path d="M48.5 48h7L52 52.5Z" fill="#a86f4a"/>` + mouthW(52.5);
+      break;
+    }
+    case 'tiger':
+      art = `<path d="M26 26L31 4l15 16Z" fill="${c}" ${O}/><path d="M30 22l3-11 8 8Z" fill="#f6d3b0"/><path d="M63 20L73 4l5 22Z" fill="${c}" ${O}/><path d="M66 19l8-8 3 11Z" fill="#f6d3b0"/>`
+        + bodyStd + `<path d="M33 80v10M71 80v10" stroke="#43392f" stroke-width="4" stroke-linecap="round"/>` + feet() + headStd
+        + `<path d="M45 14.5h14M45.5 19.5h13M47 24.5h10M52 14.5v10" stroke="#43392f" stroke-width="3.2" stroke-linecap="round"/>`
+        + `<path d="M25 44h8M71 44h8" stroke="#43392f" stroke-width="3.5" stroke-linecap="round"/>`
+        + `<ellipse cx="52" cy="53" rx="13" ry="10" fill="${cream}"/>`
+        + eyes(40) + noseTri(48.5, '#d97a6a') + mouthW(53);
+      break;
+    case 'dinosaur':
+      art = `<g fill="#3e8d50" ${O}><path d="M34 16l6-12 6 12Z"/><path d="M46 14l6-12 6 12Z"/><path d="M58 16l6-12 6 12Z"/></g>`
+        + `<path d="M79 98q13-2 11-13" stroke="#5f4d44" stroke-width="11" fill="none" stroke-linecap="round"/><path d="M79 98q13-2 11-13" stroke="${c}" stroke-width="7.5" fill="none" stroke-linecap="round"/>` + bodyStd
+        + `<ellipse cx="52" cy="92" rx="17" ry="13" fill="#d7ecc0"/>` + feet() + headStd
+        + eyes(40) + blush() + `<circle cx="47" cy="49" r="1.7" fill="${ink}"/><circle cx="57" cy="49" r="1.7" fill="${ink}"/>` + smile(55);
+      break;
+    case 'unicorn':
+      art = `<path d="M48 26L52 4l4 22Z" fill="#f4cf5e" ${O}/><path d="M49.4 19.5h5.4M50.4 13h3.6" stroke="#d9a63f" stroke-width="1.6" stroke-linecap="round"/>`
+        + `<path d="M28 24l6-13 8 10Z" fill="${c}" ${O}/><path d="M76 24l-6-13-8 10Z" fill="${c}" ${O}/>`
+        + `<g ${O}><circle cx="26" cy="30" r="7" fill="#f2a8c8"/><circle cx="22" cy="42" r="6.5" fill="#9fd6e8"/><circle cx="26" cy="53" r="6" fill="#f2a8c8"/><circle cx="78" cy="30" r="7" fill="#9fd6e8"/><circle cx="82" cy="42" r="6.5" fill="#f2a8c8"/><circle cx="78" cy="53" r="6" fill="#9fd6e8"/></g>`
+        + `<circle cx="82" cy="93" r="6" fill="#f2a8c8" ${O}/><circle cx="86" cy="84" r="5" fill="#9fd6e8" ${O}/>` + bodyStd + feet() + headStd
+        + eyes(40) + blush() + `<circle cx="48" cy="50" r="1.6" fill="#e8a0b0"/><circle cx="56" cy="50" r="1.6" fill="#e8a0b0"/>` + smile(55);
+      break;
+    default:
+      art = bodyStd + feet() + headStd + eyes() + blush() + mouthW();
+  }
+  return `<svg class="animal-svg" viewBox="0 0 104 118" aria-hidden="true"><ellipse cx="52" cy="113" rx="32" ry="5" fill="rgba(50,60,55,.16)"/>${art}<path class="tear" d="M33 54q-8 11 0 17q8-6 0-17z" fill="#56bde7"/><path class="tear" d="M72 54q-8 11 0 17q8-6 0-17z" fill="#56bde7" style="animation-delay:.35s"/></svg>`;
 }
 
 function patientHtml(patient) {
   const eggClass = patient.animal.egg ? ' sparkly' : '';
   const arrivalClass = patient.arriving ? ' arriving' : '';
   const rainbow = patient.animal.id === 'unicorn' ? '<span class="rainbow"></span>' : '';
-  const bubbleIcon = patient.cured ? '' : (patient.treating ? patient.symptom.treatmentIcon : patient.symptom.symptomIcon);
-  return `<div class="patient symptom-${patient.symptom.id}${eggClass}${arrivalClass}" data-patient="${patient.id}" aria-label="${text('petPatient')}"><div class="bubble">${bubbleIcon}</div>${rainbow}${animalSvg(patient.animal)}<span class="question">❓</span><span class="spark"></span></div>`;
+  const bubbleIcon = patient.cured ? ICON.heart : ICON[patient.treating ? patient.symptom.treatmentIcon : patient.symptom.symptomIcon];
+  return `<div class="patient symptom-${patient.symptom.id}${eggClass}${arrivalClass}" data-patient="${patient.id}" aria-label="${textPlain('petPatient')}"><div class="bubble">${bubbleIcon}</div>${rainbow}${animalSvg(patient.animal)}<span class="question">❓</span><span class="spark"></span></div>`;
 }
 
 function renderPatients() {
@@ -348,7 +499,7 @@ function startPatientDrag(event) {
 function startToolDrag(event) {
   ensureAudio(); event.preventDefault();
   const symptom = SYMPTOMS.find(s => s.tool === event.currentTarget.dataset.tool);
-  const ghost = document.createElement('div'); ghost.className = 'drag-ghost tool-ghost'; ghost.textContent = symptom.toolIcon; document.body.appendChild(ghost);
+  const ghost = document.createElement('div'); ghost.className = 'drag-ghost tool-ghost'; ghost.innerHTML = ICON[symptom.toolIcon]; document.body.appendChild(ghost);
   activeDrag = { kind: 'tool', symptom, ghost, startX: event.clientX, startY: event.clientY };
   moveGhost(event.clientX, event.clientY);
   state.beds.forEach((p, i) => { if (p && !p.treating && !p.cured) document.querySelector(`[data-bed="${i}"]`).classList.add('drop-ready'); });
@@ -396,10 +547,10 @@ function useTool(drag, patient, bedIndex) {
 }
 async function treatPatient(patient, bedIndex) {
   patient.treating = true; let el = document.querySelector(`[data-patient="${patient.id}"]`); el.classList.add('treating');
-  el.querySelector('.bubble').textContent = patient.symptom.treatmentIcon; sfx.pop();
+  el.querySelector('.bubble').innerHTML = ICON[patient.symptom.treatmentIcon]; sfx.pop();
   await sleep(CONFIG.TREAT_MS);
   patient.treating = false; patient.cured = true; el = document.querySelector(`[data-patient="${patient.id}"]`);
-  if (el) { el.classList.remove('treating'); el.classList.add('cured'); el.querySelector('.bubble').textContent = ''; sfx.cure(); burst(el); }
+  if (el) { el.classList.remove('treating'); el.classList.add('cured'); el.querySelector('.bubble').innerHTML = ICON.heart; sfx.cure(); burst(el); }
   await sleep(1450); patient.leaving = true; el = document.querySelector(`[data-patient="${patient.id}"]`);
   if (el) { el.classList.add('leaving'); flyHeart(el); }
   await sleep(850); state.beds[bedIndex] = null; state.hearts++; $('heartCount').textContent = state.hearts; checkUnlock(); saveProgress(); renderPatients();
@@ -408,8 +559,8 @@ async function treatPatient(patient, bedIndex) {
 function burst(origin) {
   const r = origin.getBoundingClientRect(), host = $('hospital').getBoundingClientRect(), scale = host.width / 1000;
   const cx = (r.left + r.width / 2 - host.left) / scale, cy = (r.top + r.height / 2 - host.top) / scale;
-  ['⭐','✨','❤','✨','⭐','❤'].forEach((glyph, i) => {
-    const p = document.createElement('span'); p.className = 'particle'; p.textContent = glyph;
+  [ICON.star, ICON.sparkle, ICON.heart, ICON.sparkle, ICON.star, ICON.heart].forEach((glyph, i) => {
+    const p = document.createElement('span'); p.className = 'particle'; p.innerHTML = glyph;
     const angle = i * Math.PI / 3; p.style.left = cx + 'px'; p.style.top = cy + 'px';
     p.style.setProperty('--dx', Math.cos(angle) * 92 + 'px'); p.style.setProperty('--dy', Math.sin(angle) * 82 + 'px');
     $('hospital').appendChild(p); setTimeout(() => p.remove(), 950);
@@ -417,7 +568,7 @@ function burst(origin) {
 }
 function flyHeart(origin) {
   const el = document.createElement('span'), hospitalRect = $('hospital').getBoundingClientRect(), r = origin.getBoundingClientRect(), scale = hospitalRect.width / 1000;
-  el.className = 'flying-heart'; el.textContent = '❤'; el.style.left = ((r.left - hospitalRect.left) / scale + 42) + 'px'; el.style.top = ((r.top - hospitalRect.top) / scale + 70) + 'px';
+  el.className = 'flying-heart'; el.innerHTML = ICON.heart; el.style.left = ((r.left - hospitalRect.left) / scale + 42) + 'px'; el.style.top = ((r.top - hospitalRect.top) / scale + 70) + 'px';
   $('heartsFly').appendChild(el); setTimeout(() => el.remove(), 900);
 }
 function checkUnlock() {
@@ -426,22 +577,43 @@ function checkUnlock() {
   state.unlocked = target; sfx.unlock(); showUnlock(ANIMALS[state.unlocked - 1]);
 }
 function showUnlock(animal) {
-  const box = $('unlockVisitor'); box.innerHTML = animalSvg(animal) + '<span class="wave">👋</span>';
-  box.classList.remove('show'); void box.offsetWidth; box.classList.add('show'); burst(box); setTimeout(() => box.classList.remove('show'), 2700);
+  const box = $('unlockVisitor'); box.innerHTML = animalSvg(animal) + `<span class="wave">${ICON.paw}</span>`;
+  box.classList.remove('show'); void box.offsetWidth; box.classList.add('show');
+  if (!playUnlockBurst()) burst(box);
+  setTimeout(() => box.classList.remove('show'), 2700);
 }
 
+/* 解鎖登場秀 Lottie：載入失敗或離線時退回 burst() 的 emoji 星星 */
+let unlockBurstAnim = null, unlockBurstReady = false;
+function initUnlockBurst() {
+  if (unlockBurstAnim || typeof lottie === 'undefined') return;
+  try {
+    unlockBurstAnim = lottie.loadAnimation({
+      container: $('unlockBurst'), renderer: 'svg', loop: false, autoplay: false,
+      path: 'assets/unlock_burst.json',
+      rendererSettings: { preserveAspectRatio: 'xMidYMid meet', progressiveLoad: true },
+    });
+    unlockBurstAnim.addEventListener('DOMLoaded', () => { unlockBurstReady = true; });
+  } catch (e) { unlockBurstAnim = null; }
+}
+function playUnlockBurst() {
+  if (!unlockBurstReady) return false;
+  try { unlockBurstAnim.stop(); unlockBurstAnim.goToAndPlay(0, true); return true; } catch (e) { return false; }
+}
+window.addEventListener('load', initUnlockBurst);
+
 function renderTools() {
-  $('tools').innerHTML = SYMPTOMS.map(s => `<div class="tool" data-tool="${s.tool}" role="button" aria-label="${text(s.tool)}"><span class="icon">${s.toolIcon}</span><span class="label">${text(s.tool)}</span></div>`).join('');
+  $('tools').innerHTML = SYMPTOMS.map(s => `<div class="tool" data-tool="${s.tool}" role="button" aria-label="${textPlain(s.tool)}"><span class="icon">${ICON[s.toolIcon]}</span><span class="label">${text(s.tool)}</span></div>`).join('');
   document.querySelectorAll('.tool').forEach(tool => tool.addEventListener('pointerdown', startToolDrag));
 }
 function buildAreas() {
   $('chairs').innerHTML = Array.from({ length: CONFIG.WAITING_MAX }, (_, i) => `<div class="chair" data-wait="${i}"></div>`).join('');
-  $('beds').innerHTML = Array.from({ length: CONFIG.BED_COUNT }, (_, i) => `<div class="bed" data-bed="${i}"><span class="bed-icon">🛏️</span></div>`).join('');
+  $('beds').innerHTML = Array.from({ length: CONFIG.BED_COUNT }, (_, i) => `<div class="bed" data-bed="${i}"><span class="bed-icon">${ICON.bed}</span></div>`).join('');
 }
 function applyStrings() {
   $('titleText').innerHTML = text('title'); $('waitingSign').innerHTML = text('waiting');
-  $('heartBox').setAttribute('aria-label', text('hearts')); $('soundBtn').setAttribute('aria-label', text(state.sound ? 'soundOff' : 'soundOn'));
-  $('langBtn').setAttribute('aria-label', text('language'));
+  $('heartBox').setAttribute('aria-label', textPlain('hearts')); $('soundBtn').setAttribute('aria-label', textPlain(state.sound ? 'soundOff' : 'soundOn'));
+  $('langBtn').setAttribute('aria-label', textPlain('language'));
   const names = { zh: '中文', tw: '台文', lo: 'Lô-má-jī' }; $('langBtn').querySelector('small').textContent = names[state.lang];
   renderTools(); renderPatients();
 }
@@ -451,7 +623,8 @@ function fit() {
   $('scaler').style.transform = `translate(-50%,-50%) scale(${scale})`;
 }
 
-$('soundBtn').addEventListener('click', () => { state.sound = !state.sound; $('soundBtn').textContent = state.sound ? '🔊' : '🔇'; if (state.sound) ensureAudio(); applyStrings(); });
+$('heartIcon').innerHTML = ICON.heart; $('soundBtn').innerHTML = ICON.sound; $('langBtn').insertAdjacentHTML('afterbegin', ICON.globe);
+$('soundBtn').addEventListener('click', () => { state.sound = !state.sound; $('soundBtn').innerHTML = state.sound ? ICON.sound : ICON.mute; if (state.sound) ensureAudio(); applyStrings(); });
 $('langBtn').addEventListener('click', () => { state.lang = state.lang === 'zh' ? 'tw' : state.lang === 'tw' ? 'lo' : 'zh'; saveProgress(); applyStrings(); });
 window.addEventListener('resize', fit);
 setInterval(() => {
