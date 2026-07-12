@@ -15,10 +15,17 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="strings.js"></script>
 <style>
+  /* Tsunu Round＝jf open 粉圓 2.1 的 subset（改名依 OFL Reserved Font Name 規定），
+     完整覆蓋台文漢字（如「㧎」）與台羅調號，授權見 fonts/LICENSE-OFL.txt */
+  @font-face {
+    font-family: "Tsunu Round";
+    src: url("fonts/tsunu-round.woff2") format("woff2");
+    font-display: swap;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
   html, body {
     width: 100%; height: 100%; overflow: hidden; background: #b9eadc;
-    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; touch-action: none;
+    font-family: "Tsunu Round", "Microsoft JhengHei", "PingFang TC", sans-serif; touch-action: none;
   }
   button { font: inherit; -webkit-tap-highlight-color: transparent; }
   #scaler {
@@ -93,6 +100,10 @@
   .tool:active { transform: scale(.96); }
   .tool .icon { font-size: 53px; line-height: 1; }
   .tool .label { margin-top: 5px; font-size: 13px; font-weight: 900; line-height: 1.05; text-align: center; }
+  /* 醫療組＋維修組同時出現（床上動物、機器人都有）時，縮小工具卡讓 8 張排得下 */
+  #tools.packed .tool { width: 99px; height: 102px; }
+  #tools.packed .tool .icon { font-size: 42px; }
+  #tools.packed .tool .label { font-size: 11.5px; }
   .patient {
     position: absolute; left: 50%; top: 18px; width: 104px; height: 185px; z-index: 7;
     transform: translateX(-50%); touch-action: none; cursor: grab;
@@ -124,6 +135,9 @@
   .patient.treating.symptom-scrape .animal-svg { animation: bandagePress .48s ease-in-out infinite alternate; }
   .patient.treating.symptom-cold .bubble { animation: noseBlow .42s ease-in-out infinite alternate; }
   .patient.treating.symptom-tooth .bubble { animation: toothBrush .2s linear infinite alternate; }
+  .patient.treating.symptom-loose .animal-svg { animation: tilt .5s ease-in-out infinite alternate; }
+  .patient.treating.symptom-squeak .animal-svg { animation: bandagePress .48s ease-in-out infinite alternate; }
+  .patient.treating.symptom-lowbatt .bubble { animation: noseBlow .42s ease-in-out infinite alternate; }
   @keyframes coolDown { to { transform: translateY(3px); opacity: .82; } }
   @keyframes tummyPat { to { transform: scaleX(.96) scaleY(1.03); } }
   @keyframes bandagePress { to { transform: scale(.97); } }
@@ -207,6 +221,14 @@ const SYMPTOMS = [
   { id: 'tooth', tool: 'toothbrush', symptomIcon: 'tooth', toolIcon: 'toothbrush', treatmentIcon: 'sparkle' },
 ];
 
+/* 機器人專屬的「症狀×工具」：機器人躺上病床時，工具列會換成維修工具組 */
+const ROBOT_SYMPTOMS = [
+  { id: 'loose', tool: 'screwdriver', symptomIcon: 'looseScrew', toolIcon: 'screwdriver', treatmentIcon: 'gear' },
+  { id: 'squeak', tool: 'wrench', symptomIcon: 'stuckGear', toolIcon: 'wrench', treatmentIcon: 'star' },
+  { id: 'lowbatt', tool: 'charger', symptomIcon: 'lowBattery', toolIcon: 'charger', treatmentIcon: 'bolt' },
+];
+const ALL_SYMPTOMS = SYMPTOMS.concat(ROBOT_SYMPTOMS);
+
 const ANIMALS = [
   { id: 'dog', color: '#cfae8c' }, { id: 'cat', color: '#f7f2ea' },
   { id: 'rabbit', color: '#f2ddd5' }, { id: 'sheep', color: '#eee9db' },
@@ -215,6 +237,7 @@ const ANIMALS = [
   { id: 'giraffe', color: '#efbe52' }, { id: 'rhino', color: '#8da3a6' },
   { id: 'lion', color: '#e5a43e', egg: true }, { id: 'tiger', color: '#ef963f', egg: true },
   { id: 'dinosaur', color: '#67b56d', egg: true }, { id: 'unicorn', color: '#f2e8f4', egg: true },
+  { id: 'robot', color: '#a9c3d9', egg: true },
 ];
 
 const $ = id => document.getElementById(id);
@@ -274,6 +297,11 @@ const sfx = {
 const ICON = (() => {
   const o = 'stroke="#5f4d44" stroke-width="1.5" stroke-linejoin="round"';
   const w = inner => `<svg width="1em" height="1em" viewBox="0 0 24 24" style="vertical-align:-.12em" aria-hidden="true">${inner}</svg>`;
+  /* 齒輪：描邊群組上再蓋一層填色群組，重疊處不留內線（剪影輪廓法） */
+  const gearShape = col => {
+    const teeth = `<rect x="9.3" y="3.4" width="5.4" height="17.2" rx="2"/><rect x="3.4" y="9.3" width="17.2" height="5.4" rx="2"/><g transform="rotate(45 12 12)"><rect x="9.3" y="3.4" width="5.4" height="17.2" rx="2"/><rect x="3.4" y="9.3" width="17.2" height="5.4" rx="2"/></g><circle cx="12" cy="12" r="6.5"/>`;
+    return `<g fill="${col}" ${o}>${teeth}</g><g fill="${col}">${teeth}</g><circle cx="12" cy="12" r="2.4" fill="#fff" ${o}/>`;
+  };
   return {
     /* 症狀 */
     thermo: w(`<rect x="10" y="3" width="4" height="12" rx="2" fill="#fff" ${o}/><rect x="11.2" y="8" width="1.6" height="7" fill="#ef5d5d"/><circle cx="12" cy="18" r="4" fill="#ef5d5d" ${o}/>`),
@@ -281,18 +309,28 @@ const ICON = (() => {
     scratch: w(`<rect x="4" y="4" width="16" height="16" rx="8" fill="#f6cdb4" ${o}/><path d="M9 8.5 7.5 15M12.8 7.5l-1.6 9M16.5 8.5 15 15" stroke="#e26d6d" stroke-width="2" stroke-linecap="round"/>`),
     snot: w(`<path d="M9 4.5q3-2.2 6 0l1.9 6.3q1 3.6-2.4 4.7H9.5q-3.4-1.1-2.4-4.7Z" fill="#f6cdb4" ${o}/><circle cx="10" cy="12.6" r="1" fill="#c9987d"/><circle cx="14" cy="12.6" r="1" fill="#c9987d"/><path d="M10 15.5c-1.1 2.1-1.9 3.3-1.9 4.4a1.95 1.95 0 0 0 3.9 0c0-1.1-.9-2.3-2-4.4Z" fill="#9fd6e8" ${o}/>`),
     tooth: w(`<path d="M7 4c2-1.6 3.4-1 5-1s3-.6 5 1c2.4 2 2 5.5.6 8-.9 1.7-1 4-1.4 6-.3 1.6-2 1.7-2.4.1-.3-1.3-.4-3.1-1.8-3.1s-1.5 1.8-1.8 3.1c-.4 1.6-2.1 1.5-2.4-.1-.4-2-.5-4.3-1.4-6C5 9.5 4.6 6 7 4Z" fill="#fff" ${o}/><circle cx="14.5" cy="8.5" r="1.7" fill="#5f4d44"/>`),
+    /* 機器人症狀 */
+    looseScrew: w(`<g transform="rotate(16 12 12)"><path d="M8.6 10.6h6.8l-.7 2.1h.7l-.8 2.3h.8l-.9 2.4-2.5 2.4-2.5-2.4-.9-2.4h.8l-.8-2.3h.7Z" fill="#cdd6de" ${o}/><circle cx="12" cy="6.8" r="4.6" fill="#cdd6de" ${o}/><path d="M12 3.9v5.8M9.1 6.8h5.8" stroke="#5f4d44" stroke-width="1.7" stroke-linecap="round"/></g><path d="M3 5.8q-1.5 2.3 0 4.6M21.4 3.4q1.5 2.3 0 4.6" stroke="#8fa8bc" stroke-width="1.7" fill="none" stroke-linecap="round"/>`),
+    stuckGear: w(`<g transform="translate(-.8 1.6) scale(.88)">${gearShape('#cdd6de')}</g><path d="M20.4 2.6c.9 1.3 1.7 2.2 1.7 3.1a1.7 1.7 0 0 1-3.4 0c0-.9.8-1.8 1.7-3.1Z" fill="#9fd6e8" ${o}/>`),
+    lowBattery: w(`<rect x="2.8" y="7.5" width="16.4" height="9.5" rx="2.2" fill="#fff" ${o}/><rect x="19.8" y="10.2" width="2.6" height="4.2" rx="1" fill="#8fa8bc" ${o}/><rect x="5.2" y="9.8" width="3.8" height="5" rx="1" fill="#ef5d5d"/>`),
     /* 工具 */
     icepack: w(`<rect x="3" y="7" width="18" height="11" rx="5.5" fill="#bfe4f2" ${o}/><path d="M12 9.5v5M9.8 11l4.4 2M14.2 11l-4.4 2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`),
     medicine: w(`<rect x="10" y="2.5" width="4" height="3.5" rx="1" fill="#c9a887" ${o}/><path d="M10 6.5h4v2.6c2 .8 3.4 2.7 3.4 5a5.4 5.4 0 1 1-10.8 0c0-2.3 1.4-4.2 3.4-5Z" fill="#fff" ${o}/><path d="M7.7 14.1a4.3 4.3 0 0 0 8.6 0c0-1.4-.7-2.6-1.8-3.4H9.5c-1.1.8-1.8 2-1.8 3.4Z" fill="#f2a0b8"/>`),
     bandage: w(`<g transform="rotate(-35 12 12)"><rect x="3" y="8.5" width="18" height="7" rx="3.5" fill="#e8c9a0" ${o}/><rect x="9" y="8.5" width="6" height="7" fill="#f6e6cc"/><circle cx="6" cy="12" r=".8" fill="#bfa079"/><circle cx="18" cy="12" r=".8" fill="#bfa079"/></g>`),
     tissuebox: w(`<path d="M10 8.8 12.3 3.9q1.5-.6 1.8 1L14.7 8.8Z" fill="#fff" ${o}/><rect x="5.5" y="8.5" width="13" height="11" rx="2" fill="#8fd0b8" ${o}/><rect x="8.6" y="7.8" width="6.8" height="1.7" rx=".85" fill="#4f8f78"/>`),
     toothbrush: w(`<g transform="rotate(-38 12 12)"><rect x="3" y="10.6" width="13" height="3" rx="1.5" fill="#f27ca0" ${o}/><rect x="15.5" y="10" width="5.5" height="4.2" rx="1.2" fill="#f27ca0" ${o}/><rect x="15.8" y="6.8" width="4.9" height="3.4" rx="1" fill="#fff" ${o}/></g>`),
+    /* 機器人維修工具 */
+    screwdriver: w(`<g transform="rotate(-38 12 12)"><rect x="10.6" y="10.8" width="8" height="2.4" rx="1" fill="#cdd6de" ${o}/><rect x="17.8" y="9.5" width="3" height="5" rx="1" fill="#cdd6de" ${o}/><rect x="2.6" y="9.3" width="9" height="5.4" rx="2.6" fill="#e2695a" ${o}/><path d="M5.5 10.6v2.8M8 10.6v2.8" stroke="#b44f43" stroke-width="1.3" stroke-linecap="round"/></g>`),
+    wrench: w(`<g transform="rotate(-40 12 12)"><rect x="9.5" y="10.7" width="11.8" height="2.6" rx="1.3" fill="#cdd6de" ${o}/><path d="M2.6 6.9a5.6 5.6 0 1 1 .4 9.6l5.2-2.7-.4-4.2Z" fill="#cdd6de" ${o}/></g>`),
+    charger: w(`<path d="M9.5 4.5v4M14.5 4.5v4" stroke="#5f4d44" stroke-width="2" stroke-linecap="round"/><rect x="7" y="8" width="10" height="8.5" rx="2.4" fill="#8fb8e8" ${o}/><path d="M13.4 9.4 10.6 13h2l-1 2.8 3-3.7h-2Z" fill="#fff"/><path d="M12 16.5v1.8q0 2.7 3 2.7h3.5" stroke="#5f4d44" stroke-width="1.8" fill="none" stroke-linecap="round"/>`),
     /* 治療演出 */
     snowflake: w(`<path d="M12 4v16M5.5 8l13 8M18.5 8l-13 8" stroke="#8fd0e0" stroke-width="1.9" stroke-linecap="round"/>`),
     spoon: w(`<ellipse cx="8.5" cy="8" rx="4" ry="5.2" fill="#cdd6de" ${o} transform="rotate(-40 8.5 8)"/><path d="M11.5 11.5 18.5 19" stroke="#5f4d44" stroke-width="3.8" stroke-linecap="round"/><path d="M11.5 11.5 18.5 19" stroke="#cdd6de" stroke-width="2" stroke-linecap="round"/>`),
     breeze: w(`<path d="M4 8h9a2.5 2.5 0 1 0-2.5-3M4 13h13a2.5 2.5 0 1 1-2.5 3M4 18h7" stroke="#9ec9d8" stroke-width="2" fill="none" stroke-linecap="round"/>`),
     sparkle: w(`<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8Z" fill="#ffd76e" ${o}/>`),
     star: w(`<path d="M12 3l2.5 5.4 5.9.6-4.4 4 1.2 5.8L12 15.9 6.8 18.8 8 13 3.6 9l5.9-.6Z" fill="#f7c948" ${o}/>`),
+    gear: w(gearShape('#9fd0a8')),
+    bolt: w(`<path d="M13.6 2.8 5.8 13.4h4.6L9.2 21.2 18.2 10h-4.8Z" fill="#ffd76e" ${o}/>`),
     /* 介面 */
     heart: w(`<path d="M12 20.5C5.2 15 2.8 10.4 5.6 7.4 7.8 5 10.8 6 12 8.6 13.2 6 16.2 5 18.4 7.4c2.8 3 .4 7.6-6.4 13.1Z" fill="#ef5d75" ${o}/>`),
     bed: w(`<rect x="3" y="6" width="3.4" height="12" rx="1.4" fill="#8b6348" ${o}/><rect x="5" y="11" width="16" height="5" rx="2" fill="#9fc0e8" ${o}/><rect x="6.4" y="9.4" width="5.4" height="3.2" rx="1.5" fill="#fff" ${o}/><path d="M5.5 16v2.4M20.5 16v2.4" stroke="#5f4d44" stroke-width="1.8" stroke-linecap="round"/>`),
@@ -433,6 +471,16 @@ function animalSvg(animal) {
         + `<circle cx="82" cy="93" r="6" fill="#f2a8c8" ${O}/><circle cx="86" cy="84" r="5" fill="#9fd6e8" ${O}/>` + bodyStd + feet() + headStd
         + eyes(40) + blush() + `<circle cx="48" cy="50" r="1.6" fill="#e8a0b0"/><circle cx="56" cy="50" r="1.6" fill="#e8a0b0"/>` + smile(55);
       break;
+    case 'robot':
+      art = `<path d="M52 16V8" stroke="#5f4d44" stroke-width="2.6" stroke-linecap="round"/><circle cx="52" cy="5.8" r="3.8" fill="#ef5d75" ${O}/>`
+        + `<circle cx="20" cy="42" r="6" fill="#cdd6de" ${O}/><circle cx="84" cy="42" r="6" fill="#cdd6de" ${O}/>`
+        + `<rect x="34" y="99" width="15" height="10" rx="5" fill="#cdd6de" ${O}/><rect x="55" y="99" width="15" height="10" rx="5" fill="#cdd6de" ${O}/>`
+        + `<rect x="31" y="70" width="42" height="33" rx="12" fill="${c}" ${O}/>`
+        + `<rect x="42" y="78" width="20" height="15" rx="5" fill="#eef4f8" ${O}/>`
+        + `<path d="M52 90.5c-3.6-3-5-5.3-3.4-7 1.2-1.3 2.8-.8 3.4.7.6-1.5 2.2-2 3.4-.7 1.6 1.7.2 4-3.4 7Z" fill="#ef5d75"/>`
+        + `<rect x="24" y="15" width="56" height="56" rx="17" fill="${c}" ${O}/>`
+        + eyes(40) + blush(53) + smile(55);
+      break;
     default:
       art = bodyStd + feet() + headStd + eyes() + blush() + mouthW();
   }
@@ -462,12 +510,14 @@ function renderPatients() {
 }
 
 function chooseAnimal() {
-  if (state.unlocked >= 10 && Math.random() < CONFIG.EASTER_EGG_CHANCE) return ANIMALS[10 + Math.floor(Math.random() * 4)];
+  if (state.unlocked >= 10 && Math.random() < CONFIG.EASTER_EGG_CHANCE) return ANIMALS[10 + Math.floor(Math.random() * 5)];
   return ANIMALS[Math.floor(Math.random() * state.unlocked)];
 }
 function spawnPatient() {
   if (state.waiting.length >= CONFIG.WAITING_MAX) { scheduleSpawn(); return; }
-  const patient = { id: state.nextId++, animal: chooseAnimal(), symptom: SYMPTOMS[Math.floor(Math.random() * SYMPTOMS.length)], waitStarted: Date.now(), crying: false, treating: false, arriving: true };
+  const animal = chooseAnimal();
+  const pool = animal.id === 'robot' ? ROBOT_SYMPTOMS : SYMPTOMS;
+  const patient = { id: state.nextId++, animal, symptom: pool[Math.floor(Math.random() * pool.length)], waitStarted: Date.now(), crying: false, treating: false, arriving: true };
   state.waiting.push(patient); renderPatients(); ensureAudio(); sfx.arrival(); setTimeout(() => { patient.arriving = false; }, 850); scheduleSpawn();
 }
 function scheduleSpawn() {
@@ -500,7 +550,7 @@ function startPatientDrag(event) {
 }
 function startToolDrag(event) {
   ensureAudio(); event.preventDefault();
-  const symptom = SYMPTOMS.find(s => s.tool === event.currentTarget.dataset.tool);
+  const symptom = ALL_SYMPTOMS.find(s => s.tool === event.currentTarget.dataset.tool);
   const ghost = document.createElement('div'); ghost.className = 'drag-ghost tool-ghost'; ghost.innerHTML = ICON[symptom.toolIcon]; document.body.appendChild(ghost);
   activeDrag = { kind: 'tool', symptom, ghost, startX: event.clientX, startY: event.clientY };
   moveGhost(event.clientX, event.clientY);
@@ -531,7 +581,7 @@ function endDrag(event) {
 
 function assignBed(patient, bedIndex) {
   const waitingIndex = state.waiting.indexOf(patient); if (waitingIndex < 0) return;
-  state.waiting.splice(waitingIndex, 1); patient.crying = false; state.beds[bedIndex] = patient; renderPatients();
+  state.waiting.splice(waitingIndex, 1); patient.crying = false; state.beds[bedIndex] = patient; renderPatients(); renderTools();
   if (state.waiting.length < CONFIG.WAITING_MAX && !spawnTimer) scheduleSpawn();
 }
 function comfortPatient(patient) {
@@ -555,7 +605,7 @@ async function treatPatient(patient, bedIndex) {
   if (el) { el.classList.remove('treating'); el.classList.add('cured'); el.querySelector('.bubble').innerHTML = ICON.heart; sfx.cure(); burst(el); }
   await sleep(1450); patient.leaving = true; el = document.querySelector(`[data-patient="${patient.id}"]`);
   if (el) { el.classList.add('leaving'); flyHeart(el); }
-  await sleep(850); state.beds[bedIndex] = null; state.hearts++; $('heartCount').textContent = state.hearts; checkUnlock(); saveProgress(); renderPatients();
+  await sleep(850); state.beds[bedIndex] = null; state.hearts++; $('heartCount').textContent = state.hearts; checkUnlock(); saveProgress(); renderPatients(); renderTools();
 }
 
 function burst(origin) {
@@ -605,7 +655,13 @@ function playUnlockBurst() {
 window.addEventListener('load', initUnlockBurst);
 
 function renderTools() {
-  $('tools').innerHTML = SYMPTOMS.map(s => `<div class="tool" data-tool="${s.tool}" role="button" aria-label="${textPlain(s.tool)}"><span class="icon">${ICON[s.toolIcon]}</span><span class="label">${text(s.tool)}</span></div>`).join('');
+  /* 工具列跟著病床上的患者變身：只有機器人→整排維修工具；動物機器人都在→兩組並排；沒機器人→醫療五件組 */
+  const bedded = state.beds.filter(Boolean);
+  const hasRobot = bedded.some(p => p.animal.id === 'robot');
+  const hasAnimal = bedded.some(p => p.animal.id !== 'robot');
+  const visible = hasRobot ? (hasAnimal ? ALL_SYMPTOMS : ROBOT_SYMPTOMS) : SYMPTOMS;
+  $('tools').classList.toggle('packed', visible.length > 6);
+  $('tools').innerHTML = visible.map(s => `<div class="tool" data-tool="${s.tool}" role="button" aria-label="${textPlain(s.tool)}"><span class="icon">${ICON[s.toolIcon]}</span><span class="label">${text(s.tool)}</span></div>`).join('');
   document.querySelectorAll('.tool').forEach(tool => tool.addEventListener('pointerdown', startToolDrag));
 }
 function buildAreas() {
