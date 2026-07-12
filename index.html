@@ -53,6 +53,34 @@
   .top-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #45907e; }
   #langBtn { width: 88px; line-height: 1; }
   #langBtn small { display: block; margin-top: 3px; font-size: 10px; color: #52706c; }
+  /* 患者名冊（圖鑑）：來過的顯示彩色立繪＋名字＋來訪數，沒來過的常駐是剪影、彩蛋整格神祕 */
+  #roster {
+    position: absolute; inset: 88px 24px 20px; z-index: 60; display: none;
+    background: #fff7e9; border: 6px solid #8b6348; border-radius: 24px; padding: 14px 20px 18px;
+    box-shadow: 0 10px 0 rgba(90, 60, 35, .25);
+  }
+  #roster.open { display: flex; flex-direction: column; }
+  #rosterHead { display: flex; align-items: center; font-size: 23px; font-weight: 900; color: #6b4f38; margin-bottom: 10px; }
+  #rosterHead .icon { font-size: 30px; line-height: 1; margin-right: 9px; }
+  #rosterTitle { display: flex; flex-direction: column; line-height: 1.1; }
+  #rosterTitle .lo { font-size: 12px; margin-top: 2px; color: #9a8672; }
+  #rosterClose { margin-left: auto; width: 54px; height: 46px; border: 0; border-radius: 13px; background: #fff; font-size: 22px; box-shadow: 0 4px 0 #c9a37c; }
+  #rosterClose:active { transform: translateY(3px); box-shadow: 0 1px 0 #c9a37c; }
+  #rosterGrid { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(3, 1fr); gap: 10px; min-height: 0; }
+  .rcard {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    background: #fff; border: 4px solid #e3cba6; border-radius: 16px; padding: 4px 4px 7px; overflow: hidden; touch-action: manipulation;
+  }
+  .rcard.egg { background: #fbf2fd; border-color: #d9bfe0; }
+  .rcard .mini { position: relative; width: 72px; height: 92px; flex: none; }
+  .rcard .mini svg { position: static; width: 72px; height: 92px; }
+  .rcard.locked .mini svg { filter: brightness(0) opacity(.3); }
+  .rcard .rname { font-size: 14px; font-weight: 900; color: #5f4d44; line-height: 1.1; text-align: center; }
+  .rcard .rname .lo { display: block; font-size: 10px; color: #9a8672; margin-top: 1px; }
+  .rcard.locked .rname { color: #b9a58c; }
+  .rcard .rcount { position: absolute; right: 7px; top: 6px; display: flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 900; color: #b63f58; }
+  .rcard .rq { font-size: 46px; font-weight: 900; color: #cbb89d; line-height: 92px; }
+  .rcard.boing .mini, .rcard.boing .rq { animation: pat .4s ease-in-out 2; }
   #door {
     position: absolute; left: 18px; top: 124px; width: 112px; height: 276px; z-index: 2;
     border: 8px solid #377c70; border-bottom: 0; border-radius: 56px 56px 0 0;
@@ -100,10 +128,10 @@
   .tool:active { transform: scale(.96); }
   .tool .icon { font-size: 53px; line-height: 1; }
   .tool .label { margin-top: 5px; font-size: 13px; font-weight: 900; line-height: 1.05; text-align: center; }
-  /* 醫療組＋維修組同時出現（床上動物、機器人都有）時，縮小工具卡讓 8 張排得下 */
-  #tools.packed .tool { width: 99px; height: 102px; }
-  #tools.packed .tool .icon { font-size: 42px; }
-  #tools.packed .tool .label { font-size: 11.5px; }
+  /* 醫療組＋維修組同時出現（床上動物、機器人都有）時，縮小工具卡讓 9 張排得下 */
+  #tools.packed .tool { width: 88px; height: 100px; }
+  #tools.packed .tool .icon { font-size: 38px; }
+  #tools.packed .tool .label { font-size: 11px; }
   .patient {
     position: absolute; left: 50%; top: 18px; width: 104px; height: 185px; z-index: 7;
     transform: translateX(-50%); touch-action: none; cursor: grab;
@@ -135,6 +163,7 @@
   .patient.treating.symptom-scrape .animal-svg { animation: bandagePress .48s ease-in-out infinite alternate; }
   .patient.treating.symptom-cold .bubble { animation: noseBlow .42s ease-in-out infinite alternate; }
   .patient.treating.symptom-tooth .bubble { animation: toothBrush .2s linear infinite alternate; }
+  .patient.treating.symptom-bottom .animal-svg { animation: tummyPat .42s ease-in-out infinite alternate; }
   .patient.treating.symptom-loose .animal-svg { animation: tilt .5s ease-in-out infinite alternate; }
   .patient.treating.symptom-squeak .animal-svg { animation: bandagePress .48s ease-in-out infinite alternate; }
   .patient.treating.symptom-lowbatt .bubble { animation: noseBlow .42s ease-in-out infinite alternate; }
@@ -182,6 +211,7 @@
     <header id="topbar">
       <div id="logo"><span class="cross">+</span><span id="titleText">小小動物醫院</span></div>
       <div id="heartBox" aria-label="愛心"><span id="heartIcon"></span><span id="heartCount">0</span></div>
+      <button class="top-btn" id="rosterBtn" type="button" aria-label="患者名冊"></button>
       <button class="top-btn" id="langBtn" type="button" aria-label="切換語言"><small>中文</small></button>
       <button class="top-btn" id="soundBtn" type="button" aria-label="關閉音效"></button>
     </header>
@@ -195,6 +225,10 @@
       <div class="bed" data-bed="1"><span class="bed-icon"></span></div>
     </section>
     <section id="toolShelf" aria-label="治療工具"><div id="tools"></div></section>
+    <section id="roster" aria-label="患者名冊">
+      <div id="rosterHead"><span class="icon" id="rosterIcon"></span><span id="rosterTitle"></span><button id="rosterClose" type="button" aria-label="關閉名冊"></button></div>
+      <div id="rosterGrid"></div>
+    </section>
     <div id="unlockBurst" aria-hidden="true"></div>
 <div id="unlockVisitor"><span class="wave"></span></div>
     <div id="heartsFly"></div>
@@ -219,6 +253,7 @@ const SYMPTOMS = [
   { id: 'scrape', tool: 'bandage', symptomIcon: 'scratch', toolIcon: 'bandage', treatmentIcon: 'star' },
   { id: 'cold', tool: 'tissue', symptomIcon: 'snot', toolIcon: 'tissuebox', treatmentIcon: 'breeze' },
   { id: 'tooth', tool: 'toothbrush', symptomIcon: 'tooth', toolIcon: 'toothbrush', treatmentIcon: 'sparkle' },
+  { id: 'bottom', tool: 'cushion', symptomIcon: 'buttPain', toolIcon: 'donut', treatmentIcon: 'breeze' },
 ];
 
 /* 機器人專屬的「症狀×工具」：機器人躺上病床時，工具列會換成維修工具組 */
@@ -242,7 +277,7 @@ const ANIMALS = [
 
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-const state = { hearts: 0, unlocked: 3, waiting: [], beds: Array(CONFIG.BED_COUNT).fill(null), lang: 'zh', sound: true, nextId: 1 };
+const state = { hearts: 0, unlocked: 3, waiting: [], beds: Array(CONFIG.BED_COUNT).fill(null), lang: 'zh', sound: true, nextId: 1, met: {} };
 let audioCtx = null, spawnTimer = 0, activeDrag = null;
 
 function text(key, vars = {}) {
@@ -262,6 +297,8 @@ function loadProgress() {
     const earnedUnlocks = 3 + Math.floor(state.hearts / CONFIG.UNLOCK_STEP);
     state.unlocked = Math.max(3, Math.min(10, Math.max(Number(localStorage.getItem('hospitalUnlocked')) || 0, earnedUnlocks)));
     state.lang = localStorage.getItem('hospitalLang') || 'zh';
+    const met = JSON.parse(localStorage.getItem('hospitalMet') || '{}');
+    if (met && typeof met === 'object') state.met = met;
   } catch (e) {}
 }
 function saveProgress() {
@@ -269,6 +306,7 @@ function saveProgress() {
     localStorage.setItem('hospitalHearts', state.hearts);
     localStorage.setItem('hospitalUnlocked', state.unlocked);
     localStorage.setItem('hospitalLang', state.lang);
+    localStorage.setItem('hospitalMet', JSON.stringify(state.met));
   } catch (e) {}
 }
 
@@ -309,6 +347,7 @@ const ICON = (() => {
     scratch: w(`<rect x="4" y="4" width="16" height="16" rx="8" fill="#f6cdb4" ${o}/><path d="M9 8.5 7.5 15M12.8 7.5l-1.6 9M16.5 8.5 15 15" stroke="#e26d6d" stroke-width="2" stroke-linecap="round"/>`),
     snot: w(`<path d="M9 4.5q3-2.2 6 0l1.9 6.3q1 3.6-2.4 4.7H9.5q-3.4-1.1-2.4-4.7Z" fill="#f6cdb4" ${o}/><circle cx="10" cy="12.6" r="1" fill="#c9987d"/><circle cx="14" cy="12.6" r="1" fill="#c9987d"/><path d="M10 15.5c-1.1 2.1-1.9 3.3-1.9 4.4a1.95 1.95 0 0 0 3.9 0c0-1.1-.9-2.3-2-4.4Z" fill="#9fd6e8" ${o}/>`),
     tooth: w(`<path d="M7 4c2-1.6 3.4-1 5-1s3-.6 5 1c2.4 2 2 5.5.6 8-.9 1.7-1 4-1.4 6-.3 1.6-2 1.7-2.4.1-.3-1.3-.4-3.1-1.8-3.1s-1.5 1.8-1.8 3.1c-.4 1.6-2.1 1.5-2.4-.1-.4-2-.5-4.3-1.4-6C5 9.5 4.6 6 7 4Z" fill="#fff" ${o}/><circle cx="14.5" cy="8.5" r="1.7" fill="#5f4d44"/>`),
+    buttPain: (() => { const cheeks = `<circle cx="8.7" cy="13.5" r="6.6"/><circle cx="15.3" cy="13.5" r="6.6"/>`; return w(`<g fill="#f6cdb4" ${o}>${cheeks}</g><g fill="#f6cdb4">${cheeks}</g><path d="M12 8.6v9.6" stroke="#d9a884" stroke-width="1.7" stroke-linecap="round"/><path d="M3.4 5.2 5 7M20.6 5.2 19 7M1.8 10.4l2.2.6M22.2 10.4l-2.2.6" stroke="#ef8080" stroke-width="1.8" stroke-linecap="round"/>`); })(),
     /* 機器人症狀 */
     looseScrew: w(`<g transform="rotate(16 12 12)"><path d="M8.6 10.6h6.8l-.7 2.1h.7l-.8 2.3h.8l-.9 2.4-2.5 2.4-2.5-2.4-.9-2.4h.8l-.8-2.3h.7Z" fill="#cdd6de" ${o}/><circle cx="12" cy="6.8" r="4.6" fill="#cdd6de" ${o}/><path d="M12 3.9v5.8M9.1 6.8h5.8" stroke="#5f4d44" stroke-width="1.7" stroke-linecap="round"/></g><path d="M3 5.8q-1.5 2.3 0 4.6M21.4 3.4q1.5 2.3 0 4.6" stroke="#8fa8bc" stroke-width="1.7" fill="none" stroke-linecap="round"/>`),
     stuckGear: w(`<g transform="translate(-.8 1.6) scale(.88)">${gearShape('#cdd6de')}</g><path d="M20.4 2.6c.9 1.3 1.7 2.2 1.7 3.1a1.7 1.7 0 0 1-3.4 0c0-.9.8-1.8 1.7-3.1Z" fill="#9fd6e8" ${o}/>`),
@@ -319,6 +358,7 @@ const ICON = (() => {
     bandage: w(`<g transform="rotate(-35 12 12)"><rect x="3" y="8.5" width="18" height="7" rx="3.5" fill="#e8c9a0" ${o}/><rect x="9" y="8.5" width="6" height="7" fill="#f6e6cc"/><circle cx="6" cy="12" r=".8" fill="#bfa079"/><circle cx="18" cy="12" r=".8" fill="#bfa079"/></g>`),
     tissuebox: w(`<path d="M10 8.8 12.3 3.9q1.5-.6 1.8 1L14.7 8.8Z" fill="#fff" ${o}/><rect x="5.5" y="8.5" width="13" height="11" rx="2" fill="#8fd0b8" ${o}/><rect x="8.6" y="7.8" width="6.8" height="1.7" rx=".85" fill="#4f8f78"/>`),
     toothbrush: w(`<g transform="rotate(-38 12 12)"><rect x="3" y="10.6" width="13" height="3" rx="1.5" fill="#f27ca0" ${o}/><rect x="15.5" y="10" width="5.5" height="4.2" rx="1.2" fill="#f27ca0" ${o}/><rect x="15.8" y="6.8" width="4.9" height="3.4" rx="1" fill="#fff" ${o}/></g>`),
+    donut: w(`<circle cx="12" cy="12" r="9" fill="#f2a0b8" ${o}/><circle cx="12" cy="12" r="3.4" fill="#fff7e9" ${o}/><path d="M7.2 8.2l1.8 1M15.2 6.8l.6 1.9M17.6 12.6l-1.9.8M9.4 16.2l1 1.7M5.4 12.8l2-.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`),
     /* 機器人維修工具 */
     screwdriver: w(`<g transform="rotate(-38 12 12)"><rect x="10.6" y="10.8" width="8" height="2.4" rx="1" fill="#cdd6de" ${o}/><rect x="17.8" y="9.5" width="3" height="5" rx="1" fill="#cdd6de" ${o}/><rect x="2.6" y="9.3" width="9" height="5.4" rx="2.6" fill="#e2695a" ${o}/><path d="M5.5 10.6v2.8M8 10.6v2.8" stroke="#b44f43" stroke-width="1.3" stroke-linecap="round"/></g>`),
     wrench: w(`<g transform="rotate(-40 12 12)"><rect x="9.5" y="10.7" width="11.8" height="2.6" rx="1.3" fill="#cdd6de" ${o}/><path d="M2.6 6.9a5.6 5.6 0 1 1 .4 9.6l5.2-2.7-.4-4.2Z" fill="#cdd6de" ${o}/></g>`),
@@ -338,6 +378,8 @@ const ICON = (() => {
     sound: w(`<path d="M4.5 9.5v5h3.4l4.6 3.8V5.7L7.9 9.5Z" fill="#5f4d44"/><path d="M15.5 9a4.5 4.5 0 0 1 0 6M18 6.8a8 8 0 0 1 0 10.4" stroke="#5f4d44" stroke-width="1.8" fill="none" stroke-linecap="round"/>`),
     mute: w(`<path d="M4.5 9.5v5h3.4l4.6 3.8V5.7L7.9 9.5Z" fill="#5f4d44"/><path d="M16 9.5l5 5M21 9.5l-5 5" stroke="#ef5d5d" stroke-width="2" stroke-linecap="round"/>`),
     paw: w(`<circle cx="12" cy="15" r="5.2" fill="#e8b98a" ${o}/><circle cx="5.3" cy="10.5" r="2.5" fill="#e8b98a" ${o}/><circle cx="9.6" cy="6.8" r="2.5" fill="#e8b98a" ${o}/><circle cx="14.4" cy="6.8" r="2.5" fill="#e8b98a" ${o}/><circle cx="18.7" cy="10.5" r="2.5" fill="#e8b98a" ${o}/>`),
+    book: w(`<rect x="5.5" y="3.5" width="15" height="17" rx="2.5" fill="#8fd0b8" ${o}/><rect x="5.5" y="3.5" width="3.6" height="17" rx="1.6" fill="#4f8f78" ${o}/><path d="M15 13.6c-2-1.7-2.8-3-1.9-4 .7-.7 1.6-.4 1.9.4.3-.8 1.2-1.1 1.9-.4.9 1 .1 2.3-1.9 4Z" fill="#ef5d75"/>`),
+    closeX: w(`<path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="#5f4d44" stroke-width="3.2" stroke-linecap="round"/>`),
   };
 })();
 
@@ -518,6 +560,8 @@ function spawnPatient() {
   const animal = chooseAnimal();
   const pool = animal.id === 'robot' ? ROBOT_SYMPTOMS : SYMPTOMS;
   const patient = { id: state.nextId++, animal, symptom: pool[Math.floor(Math.random() * pool.length)], waitStarted: Date.now(), crying: false, treating: false, arriving: true };
+  state.met[animal.id] = (state.met[animal.id] || 0) + 1; saveProgress();
+  if ($('roster').classList.contains('open')) buildRoster();
   state.waiting.push(patient); renderPatients(); ensureAudio(); sfx.arrival(); setTimeout(() => { patient.arriving = false; }, 850); scheduleSpawn();
 }
 function scheduleSpawn() {
@@ -539,33 +583,44 @@ function bindPatientEvents() {
 function findPatient(id) { return state.waiting.find(p => p.id === id) || state.beds.find(p => p && p.id === id); }
 
 function startPatientDrag(event) {
+  if (activeDrag) return; /* 平板多指防護：拖曳進行中忽略新的觸點，避免殘影孤兒 */
   const patient = state.waiting.find(p => p.id === Number(event.currentTarget.dataset.patient));
   if (!patient) return;
   ensureAudio(); event.preventDefault();
   const ghost = event.currentTarget.cloneNode(true); ghost.classList.add('drag-ghost'); document.body.appendChild(ghost);
-  activeDrag = { kind: 'patient', patient, ghost, startX: event.clientX, startY: event.clientY };
+  activeDrag = { kind: 'patient', patient, ghost, startX: event.clientX, startY: event.clientY, pointerId: event.pointerId };
   moveGhost(event.clientX, event.clientY);
   document.querySelectorAll('.bed').forEach((bed, i) => { if (!state.beds[i]) bed.classList.add('drop-ready'); });
-  window.addEventListener('pointermove', dragMove); window.addEventListener('pointerup', endDrag, { once: true }); window.addEventListener('pointercancel', endDrag, { once: true });
+  window.addEventListener('pointermove', dragMove); window.addEventListener('pointerup', endDrag); window.addEventListener('pointercancel', endDrag);
 }
 function startToolDrag(event) {
+  if (activeDrag) return;
   ensureAudio(); event.preventDefault();
   const symptom = ALL_SYMPTOMS.find(s => s.tool === event.currentTarget.dataset.tool);
   const ghost = document.createElement('div'); ghost.className = 'drag-ghost tool-ghost'; ghost.innerHTML = ICON[symptom.toolIcon]; document.body.appendChild(ghost);
-  activeDrag = { kind: 'tool', symptom, ghost, startX: event.clientX, startY: event.clientY };
+  activeDrag = { kind: 'tool', symptom, ghost, startX: event.clientX, startY: event.clientY, pointerId: event.pointerId };
   moveGhost(event.clientX, event.clientY);
   state.beds.forEach((p, i) => { if (p && !p.treating && !p.cured) document.querySelector(`[data-bed="${i}"]`).classList.add('drop-ready'); });
-  window.addEventListener('pointermove', dragMove); window.addEventListener('pointerup', endDrag, { once: true }); window.addEventListener('pointercancel', endDrag, { once: true });
+  window.addEventListener('pointermove', dragMove); window.addEventListener('pointerup', endDrag); window.addEventListener('pointercancel', endDrag);
 }
-function dragMove(event) { if (activeDrag) moveGhost(event.clientX, event.clientY); }
+function dragMove(event) { if (activeDrag && event.pointerId === activeDrag.pointerId) moveGhost(event.clientX, event.clientY); }
+/* 殘影清掃網：不屬於進行中拖曳、也不是揮別動畫中的殘影，一律移除 */
+function sweepGhosts() {
+  document.querySelectorAll('.drag-ghost').forEach(g => {
+    const keep = (activeDrag && g === activeDrag.ghost) || g.classList.contains('wrong');
+    if (!keep) g.remove();
+  });
+}
 function moveGhost(x, y) { activeDrag.ghost.style.left = x + 'px'; activeDrag.ghost.style.top = y + 'px'; activeDrag.x = x; activeDrag.y = y; }
 function bedAt(x, y) {
   return [...document.querySelectorAll('.bed')].findIndex(bed => { const r = bed.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; });
 }
 function endDrag(event) {
+  if (!activeDrag || event.pointerId !== activeDrag.pointerId) return; /* 只認發起拖曳的那根手指 */
   window.removeEventListener('pointermove', dragMove);
+  window.removeEventListener('pointerup', endDrag);
+  window.removeEventListener('pointercancel', endDrag);
   document.querySelectorAll('.bed').forEach(bed => bed.classList.remove('drop-ready'));
-  if (!activeDrag) return;
   const drag = activeDrag, x = event.clientX || drag.x, y = event.clientY || drag.y, bedIndex = bedAt(x, y);
   activeDrag = null;
   if (drag.kind === 'patient') {
@@ -577,6 +632,7 @@ function endDrag(event) {
     if (bedIndex >= 0 && state.beds[bedIndex] && !state.beds[bedIndex].treating && !state.beds[bedIndex].cured) useTool(drag, state.beds[bedIndex], bedIndex);
     else drag.ghost.remove();
   }
+  sweepGhosts();
 }
 
 function assignBed(patient, bedIndex) {
@@ -592,8 +648,8 @@ function comfortPatient(patient) {
 function useTool(drag, patient, bedIndex) {
   if (drag.symptom.tool !== patient.symptom.tool) {
     sfx.wrong(); drag.ghost.classList.add('wrong');
-    const el = document.querySelector(`[data-patient="${patient.id}"]`); el.classList.add('oops');
-    setTimeout(() => { drag.ghost.remove(); el.classList.remove('oops'); }, 850); return;
+    const el = document.querySelector(`[data-patient="${patient.id}"]`); if (el) el.classList.add('oops');
+    setTimeout(() => { drag.ghost.remove(); const now = document.querySelector(`[data-patient="${patient.id}"]`); if (now) now.classList.remove('oops'); }, 850); return;
   }
   drag.ghost.remove(); treatPatient(patient, bedIndex);
 }
@@ -654,6 +710,30 @@ function playUnlockBurst() {
 }
 window.addEventListener('load', initUnlockBurst);
 
+/* ---------- 患者名冊（圖鑑）：來過的動物才會揭曉 ---------- */
+function buildRoster() {
+  $('rosterTitle').innerHTML = text('roster');
+  $('rosterClose').setAttribute('aria-label', textPlain('rosterClose'));
+  $('rosterGrid').innerHTML = ANIMALS.map(animal => {
+    const count = state.met[animal.id] || 0;
+    const eggClass = animal.egg ? ' egg' : '';
+    if (!count) {
+      /* 常駐動物給剪影當提示；彩蛋連輪廓都保密，只給一個大問號 */
+      const inner = animal.egg ? '<span class="rq">?</span>' : `<span class="mini">${animalSvg(animal)}</span>`;
+      return `<div class="rcard locked${eggClass}" data-roster="${animal.id}" role="button" aria-label="${textPlain('mystery')}">${inner}<span class="rname">${text('mystery')}</span></div>`;
+    }
+    return `<div class="rcard${eggClass}" data-roster="${animal.id}" role="button" aria-label="${textPlain(animal.id)}"><span class="rcount">${ICON.heart}<span>${count}</span></span><span class="mini">${animalSvg(animal)}</span><span class="rname">${text(animal.id)}</span></div>`;
+  }).join('');
+  document.querySelectorAll('.rcard').forEach(card => card.addEventListener('pointerdown', rosterCardTap));
+}
+function rosterCardTap(event) {
+  const card = event.currentTarget; ensureAudio();
+  if (card.classList.contains('locked')) sfx.wrong(); else sfx.pop();
+  card.classList.remove('boing'); void card.offsetWidth; card.classList.add('boing');
+}
+function openRoster() { ensureAudio(); sfx.pop(); buildRoster(); $('roster').classList.add('open'); }
+function closeRoster() { sfx.pop(); $('roster').classList.remove('open'); }
+
 function renderTools() {
   /* 工具列跟著病床上的患者變身：只有機器人→整排維修工具；動物機器人都在→兩組並排；沒機器人→醫療五件組 */
   const bedded = state.beds.filter(Boolean);
@@ -672,8 +752,10 @@ function applyStrings() {
   $('titleText').innerHTML = text('title'); $('waitingSign').innerHTML = text('waiting');
   $('heartBox').setAttribute('aria-label', textPlain('hearts')); $('soundBtn').setAttribute('aria-label', textPlain(state.sound ? 'soundOff' : 'soundOn'));
   $('langBtn').setAttribute('aria-label', textPlain('language'));
+  $('rosterBtn').setAttribute('aria-label', textPlain('roster'));
   const names = { zh: '中文', tw: '台文', lo: 'Lô-má-jī' }; $('langBtn').querySelector('small').textContent = names[state.lang];
   renderTools(); renderPatients();
+  if ($('roster').classList.contains('open')) buildRoster();
 }
 
 function fit() {
@@ -682,6 +764,8 @@ function fit() {
 }
 
 $('heartIcon').innerHTML = ICON.heart; $('soundBtn').innerHTML = ICON.sound; $('langBtn').insertAdjacentHTML('afterbegin', ICON.globe);
+$('rosterBtn').innerHTML = ICON.book; $('rosterClose').innerHTML = ICON.closeX; $('rosterIcon').innerHTML = ICON.book;
+$('rosterBtn').addEventListener('click', openRoster); $('rosterClose').addEventListener('click', closeRoster);
 $('soundBtn').addEventListener('click', () => { state.sound = !state.sound; $('soundBtn').innerHTML = state.sound ? ICON.sound : ICON.mute; if (state.sound) ensureAudio(); applyStrings(); });
 $('langBtn').addEventListener('click', () => { state.lang = state.lang === 'zh' ? 'tw' : state.lang === 'tw' ? 'lo' : 'zh'; saveProgress(); applyStrings(); });
 window.addEventListener('resize', fit);
@@ -689,6 +773,7 @@ setInterval(() => {
   const now = Date.now(); state.waiting.forEach(patient => {
     if (!patient.crying && now - patient.waitStarted >= CONFIG.CRY_AFTER_MS) { patient.crying = true; sfx.cry(); const el = document.querySelector(`[data-patient="${patient.id}"]`); if (el) el.classList.add('crying'); }
   });
+  if (!activeDrag) sweepGhosts(); /* 每秒巡一次：沒有拖曳進行中就掃掉漏網殘影 */
 }, 1000);
 
 loadProgress(); buildAreas(); fit(); applyStrings(); $('heartCount').textContent = state.hearts;
