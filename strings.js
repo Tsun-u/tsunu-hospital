@@ -39,6 +39,7 @@ const STRINGS = {
   petPatient:   { zh: '小動物病人', tw: '動物患者', lo: 'tōng-bu̍t huān-tsiá' },
   comfort:      { zh: '拍拍安撫', tw: '搭搭惜惜', lo: 'tah-tah sioh-sioh' },
   roster:       { zh: '患者名冊', tw: '患者名冊', lo: 'huān-tsiá miâ-tsheh' },
+  github:       { zh: '在 GitHub 查看原始碼', tw: '', lo: '' },
   rosterClose:  { zh: '關閉名冊', tw: '關名冊', lo: 'kuainn miâ-tsheh' },
   mystery:      { zh: '？？？', tw: '', lo: '' },
   /* 患者名冊的動物名（台文與台羅經母語者校訂） */

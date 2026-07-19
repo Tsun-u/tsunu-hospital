@@ -53,6 +53,8 @@
   .top-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #45907e; }
   #langBtn { width: 88px; line-height: 1; }
   #langBtn small { display: block; margin-top: 3px; font-size: 10px; color: #52706c; }
+  /* GitHub 連結：外觀比照其餘 .top-btn，<a> 標籤需要自己補 display/置中/去底線 */
+  #githubBtn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
   /* 患者名冊（圖鑑）：來過的顯示彩色立繪＋名字＋來訪數，沒來過的常駐是剪影、彩蛋整格神祕 */
   #roster {
     position: absolute; inset: 88px 24px 20px; z-index: 60; display: none;
@@ -214,6 +216,7 @@
       <button class="top-btn" id="rosterBtn" type="button" aria-label="患者名冊"></button>
       <button class="top-btn" id="langBtn" type="button" aria-label="切換語言"><small>中文</small></button>
       <button class="top-btn" id="soundBtn" type="button" aria-label="關閉音效"></button>
+      <a class="top-btn" id="githubBtn" href="https://github.com/Tsun-u/tsunu-hospital" target="_blank" rel="noopener" aria-label="在 GitHub 查看原始碼"></a>
     </header>
     <div id="door"></div><div id="doorMat"></div>
     <section id="waitingArea" aria-label="候診區">
@@ -380,6 +383,7 @@ const ICON = (() => {
     paw: w(`<circle cx="12" cy="15" r="5.2" fill="#e8b98a" ${o}/><circle cx="5.3" cy="10.5" r="2.5" fill="#e8b98a" ${o}/><circle cx="9.6" cy="6.8" r="2.5" fill="#e8b98a" ${o}/><circle cx="14.4" cy="6.8" r="2.5" fill="#e8b98a" ${o}/><circle cx="18.7" cy="10.5" r="2.5" fill="#e8b98a" ${o}/>`),
     book: w(`<rect x="5.5" y="3.5" width="15" height="17" rx="2.5" fill="#8fd0b8" ${o}/><rect x="5.5" y="3.5" width="3.6" height="17" rx="1.6" fill="#4f8f78" ${o}/><path d="M15 13.6c-2-1.7-2.8-3-1.9-4 .7-.7 1.6-.4 1.9.4.3-.8 1.2-1.1 1.9-.4.9 1 .1 2.3-1.9 4Z" fill="#ef5d75"/>`),
     closeX: w(`<path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="#5f4d44" stroke-width="3.2" stroke-linecap="round"/>`),
+    github: w(`<path fill="#5f4d44" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" transform="scale(1.5)"/>`),
   };
 })();
 
@@ -753,6 +757,7 @@ function applyStrings() {
   $('heartBox').setAttribute('aria-label', textPlain('hearts')); $('soundBtn').setAttribute('aria-label', textPlain(state.sound ? 'soundOff' : 'soundOn'));
   $('langBtn').setAttribute('aria-label', textPlain('language'));
   $('rosterBtn').setAttribute('aria-label', textPlain('roster'));
+  $('githubBtn').setAttribute('aria-label', textPlain('github'));
   const names = { zh: '中文', tw: '台文', lo: 'Lô-má-jī' }; $('langBtn').querySelector('small').textContent = names[state.lang];
   renderTools(); renderPatients();
   if ($('roster').classList.contains('open')) buildRoster();
@@ -765,6 +770,7 @@ function fit() {
 
 $('heartIcon').innerHTML = ICON.heart; $('soundBtn').innerHTML = ICON.sound; $('langBtn').insertAdjacentHTML('afterbegin', ICON.globe);
 $('rosterBtn').innerHTML = ICON.book; $('rosterClose').innerHTML = ICON.closeX; $('rosterIcon').innerHTML = ICON.book;
+$('githubBtn').innerHTML = ICON.github;
 $('rosterBtn').addEventListener('click', openRoster); $('rosterClose').addEventListener('click', closeRoster);
 $('soundBtn').addEventListener('click', () => { state.sound = !state.sound; $('soundBtn').innerHTML = state.sound ? ICON.sound : ICON.mute; if (state.sound) ensureAudio(); applyStrings(); });
 $('langBtn').addEventListener('click', () => { state.lang = state.lang === 'zh' ? 'tw' : state.lang === 'tw' ? 'lo' : 'zh'; saveProgress(); applyStrings(); });
